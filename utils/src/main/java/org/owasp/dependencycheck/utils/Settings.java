@@ -151,16 +151,36 @@ public final class Settings {
          * The properties key for the URL to retrieve the recently modified and
          * added CVE entries (last 8 days) using the 2.0 schema.
          */
+        @Deprecated
         public static final String CVE_MODIFIED_20_URL = "cve.url-2.0.modified";
         /**
          * The properties key for the URL to retrieve the recently modified and
          * added CVE entries (last 8 days) using the 2.0 schema.
          */
+        public static final String CVE_MODIFIED_JSON = "cve.url.modified";
+        /**
+         * The properties key for the original/modified URL to retrieve the
+         * recently modified and added CVE entries (last 8 days). Note, this is
+         * only used to compare against CVE_MODIFIED_JSON.
+         */
+        public static final String CVE_ORIGINAL_JSON = "cve.url.original";
+        /**
+         * The properties key for the URL to retrieve the recently modified and
+         * added CVE entries (last 8 days) using the 2.0 schema.
+         */
+        public static final String CVE_BASE_JSON = "cve.url.base";
+        
+        /**
+         * The properties key for the URL to retrieve the recently modified and
+         * added CVE entries (last 8 days) using the 2.0 schema.
+         */
+        @Deprecated
         public static final String CVE_ORIGINAL_MODIFIED_20_URL = "cve.url-2.0.original";
         /**
          * The properties key for the URL to retrieve the recently modified and
          * added CVE entries (last 8 days) using the 1.2 schema.
          */
+        @Deprecated
         public static final String CVE_MODIFIED_12_URL = "cve.url-1.2.modified";
         /**
          * The properties key for the URL to retrieve the recently modified and
@@ -181,10 +201,12 @@ public final class Settings {
         /**
          * The properties key for the CVE schema version 1.2.
          */
+        @Deprecated
         public static final String CVE_SCHEMA_1_2 = "cve.url-1.2.base";
         /**
          * The properties key for the CVE schema version 2.0.
          */
+        @Deprecated
         public static final String CVE_SCHEMA_2_0 = "cve.url-2.0.base";
         /**
          * The properties key that indicates how often the CPE data needs to be
