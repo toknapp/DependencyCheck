@@ -18,6 +18,7 @@
 package org.owasp.dependencycheck.utils;
 
 import java.io.File;
+import java.io.InputStream;
 import java.net.URL;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
@@ -45,13 +46,5 @@ public class DownloaderIT extends BaseTest {
         Downloader downloader = new Downloader(getSettings());
         downloader.fetchFile(url, outputPath);
         assertTrue(outputPath.isFile());
-    }
-
-    @Test
-    public void testGetLastModified() throws Exception {
-        URL url = new URL(getSettings().getString(Settings.KEYS.CVE_MODIFIED_20_URL));
-        Downloader downloader = new Downloader(getSettings());
-        long timestamp = downloader.getLastModified(url);
-        assertTrue("timestamp equal to zero?", timestamp > 0);
     }
 }
