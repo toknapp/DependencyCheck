@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.security.InvalidAlgorithmParameterException;
 import static java.lang.String.format;
 import org.apache.commons.io.IOUtils;
 
@@ -86,44 +85,11 @@ public final class Downloader {
     public void fetchFile(URL url, File outputPath, boolean useProxy) throws DownloadFailedException {
         try (HttpResourceConnection conn = new HttpResourceConnection(settings, useProxy);
                 OutputStream out = new FileOutputStream(outputPath)) {
-            InputStream in = conn.fetch(url);
+            final InputStream in = conn.fetch(url);
             IOUtils.copy(in, out);
         } catch (IOException ex) {
             final String msg = format("Download failed, unable to copy '%s' to '%s'", url.toString(), outputPath.getAbsolutePath());
             throw new DownloadFailedException(msg, ex);
-        }
-    }
-
-    /**
-     * Analyzes the IOException, logs the appropriate information for debugging
-     * purposes, and then throws a DownloadFailedException that wraps the IO
-     * Exception for common IO Exceptions. This is to provide additional details
-     * to assist in resolution of the exception.
-     *
-     * @param ex the original exception
-     * @throws DownloadFailedException a wrapper exception that contains the
-     * original exception as the cause
-     */
-    protected void checkForCommonExceptionTypes(IOException ex) throws DownloadFailedException {
-        Throwable cause = ex;
-        while (cause != null) {
-            if (cause instanceof java.net.UnknownHostException) {
-                final String msg = format("Unable to resolve domain '%s'", cause.getMessage());
-                LOGGER.error(msg);
-                throw new DownloadFailedException(msg, cause);
-            }
-            if (cause instanceof InvalidAlgorithmParameterException) {
-                final String keystore = System.getProperty("javax.net.ssl.keyStore");
-                final String version = System.getProperty("java.version");
-                final String vendor = System.getProperty("java.vendor");
-                LOGGER.info("Error making HTTPS request - InvalidAlgorithmParameterException");
-                LOGGER.info("There appears to be an issue with the installation of Java and the cacerts."
-                        + "See closed issue #177 here: https://github.com/jeremylong/DependencyCheck/issues/177");
-                LOGGER.info("Java Info:\njavax.net.ssl.keyStore='{}'\njava.version='{}'\njava.vendor='{}'",
-                        keystore, version, vendor);
-                throw new DownloadFailedException("Error making HTTPS request. Please see the log for more details.");
-            }
-            cause = cause.getCause();
         }
     }
 }
