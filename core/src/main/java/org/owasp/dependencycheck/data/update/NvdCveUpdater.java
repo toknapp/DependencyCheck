@@ -46,6 +46,7 @@ import org.owasp.dependencycheck.data.update.nvd.UpdateableNvdCve;
 import org.owasp.dependencycheck.utils.DateUtil;
 import org.owasp.dependencycheck.utils.Downloader;
 import org.owasp.dependencycheck.utils.DownloadFailedException;
+import org.owasp.dependencycheck.utils.HttpResourceConnection;
 import org.owasp.dependencycheck.utils.InvalidSettingException;
 import org.owasp.dependencycheck.utils.Settings;
 import org.slf4j.Logger;
@@ -508,8 +509,8 @@ public class NvdCveUpdater implements CachedWebDataSource {
         public Long call() throws Exception {
             LOGGER.debug("Checking for updates from: {}", url);
             try {
-                final Downloader downloader = new Downloader(settings);
-                return downloader.getLastModified(new URL(url));
+                HttpResourceConnection resource = new HttpResourceConnection(settings);
+                return resource.getLastModified(new URL(url));
             } finally {
                 settings.cleanup(false);
             }
