@@ -416,13 +416,13 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
                 }
             }
             if (v != null) {
-                score = v.getCvssScore();
-                vulnerability.setCvssAccessComplexity(v.getCvssAccessComplexity());
-                vulnerability.setCvssAccessVector(v.getCvssAccessVector());
-                vulnerability.setCvssAuthentication(v.getCvssAuthentication());
-                vulnerability.setCvssAvailabilityImpact(v.getCvssAvailabilityImpact());
-                vulnerability.setCvssConfidentialityImpact(v.getCvssConfidentialityImpact());
-                vulnerability.setCvssIntegrityImpact(v.getCvssIntegrityImpact());
+                score = v.getCvssV2Score();
+                vulnerability.setCvssV2AccessComplexity(v.getCvssV2AccessComplexity());
+                vulnerability.setCvssV2AccessVector(v.getCvssV2AccessVector());
+                vulnerability.setCvssV2Authentication(v.getCvssV2Authentication());
+                vulnerability.setCvssV2AvailabilityImpact(v.getCvssV2AvailabilityImpact());
+                vulnerability.setCvssV2ConfidentialityImpact(v.getCvssV2ConfidentialityImpact());
+                vulnerability.setCvssV2IntegrityImpact(v.getCvssV2IntegrityImpact());
             } else if ("High".equalsIgnoreCase(criticality)) {
                 score = 8.5f;
             } else if ("Medium".equalsIgnoreCase(criticality)) {
@@ -430,7 +430,7 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
             } else if ("Low".equalsIgnoreCase(criticality)) {
                 score = 2.0f;
             }
-            vulnerability.setCvssScore(score);
+            vulnerability.setCvssV2Score(score);
         }
         LOGGER.debug("bundle-audit ({}): {}", parentName, nextLine);
     }
@@ -457,12 +457,12 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
             vulnerability.setMatchedCPE(
                     String.format("cpe:/a:%1$s_project:%1$s:%2$s::~~~ruby~~", gem, version),
                     null);
-            vulnerability.setCvssAccessVector("-");
-            vulnerability.setCvssAccessComplexity("-");
-            vulnerability.setCvssAuthentication("-");
-            vulnerability.setCvssAvailabilityImpact("-");
-            vulnerability.setCvssConfidentialityImpact("-");
-            vulnerability.setCvssIntegrityImpact("-");
+            vulnerability.setCvssV2AccessVector("-");
+            vulnerability.setCvssV2AccessComplexity("-");
+            vulnerability.setCvssV2Authentication("-");
+            vulnerability.setCvssV2AvailabilityImpact("-");
+            vulnerability.setCvssV2ConfidentialityImpact("-");
+            vulnerability.setCvssV2IntegrityImpact("-");
         }
         LOGGER.debug("bundle-audit ({}): {}", parentName, nextLine);
         return vulnerability;

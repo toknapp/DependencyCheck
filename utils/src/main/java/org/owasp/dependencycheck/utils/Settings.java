@@ -133,9 +133,9 @@ public final class Settings {
         public static final String DB_VERSION = "data.version";
         /**
          * The starts with filter used to exclude CVE entries from the database.
-         * By default this is set to 'cpe:/a:' which limits the CVEs imported to
-         * just those that are related to applications. If this were set to just
-         * 'cpe:' the OS, hardware, and application related CVEs would be
+         * By default this is set to 'cpe:2.3:a:' which limits the CVEs imported
+         * to just those that are related to applications. If this were set to
+         * just 'cpe:2.3:' the OS, hardware, and application related CVEs would be
          * imported.
          */
         public static final String CVE_CPE_STARTS_WITH_FILTER = "cve.cpe.startswith.filter";
@@ -169,7 +169,7 @@ public final class Settings {
          * added CVE entries (last 8 days) using the 2.0 schema.
          */
         public static final String CVE_BASE_JSON = "cve.url.base";
-        
+
         /**
          * The properties key for the URL to retrieve the recently modified and
          * added CVE entries (last 8 days) using the 2.0 schema.

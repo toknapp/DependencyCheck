@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2012 Jeremy Long. All Rights Reserved.
+ * Copyright (c) 2018 Jeremy Long. All Rights Reserved.
  */
 package org.owasp.dependencycheck.data.nvdcve;
 //CSOFF: AvoidStarImport
+
 import org.apache.commons.collections.map.ReferenceMap;
-import org.owasp.dependencycheck.data.cwe.CweDB;
 import org.owasp.dependencycheck.dependency.Reference;
 import org.owasp.dependencycheck.dependency.Vulnerability;
 import org.owasp.dependencycheck.dependency.VulnerableSoftware;
@@ -35,11 +35,28 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import static org.apache.commons.collections.map.AbstractReferenceMap.HARD;
 import static org.apache.commons.collections.map.AbstractReferenceMap.SOFT;
+import org.owasp.dependencycheck.data.nvd.json.BaseMetricV2;
+import org.owasp.dependencycheck.data.nvd.json.BaseMetricV3;
+import org.owasp.dependencycheck.data.nvd.json.CVEItem;
+import org.owasp.dependencycheck.data.nvd.json.ConfigurationNodeExtension;
+import org.owasp.dependencycheck.data.nvd.json.CpeMatch;
+import org.owasp.dependencycheck.data.nvd.json.Description;
+import org.owasp.dependencycheck.data.nvd.json.Node;
+import org.owasp.dependencycheck.data.nvd.json.ProblemtypeDatum;
+import org.owasp.dependencycheck.data.nvd.json.ReferenceDatum;
 import static org.owasp.dependencycheck.data.nvdcve.CveDB.PreparedStatementCveDb.*;
+import org.owasp.dependencycheck.data.update.exception.UpdateException;
+import org.owasp.dependencycheck.dependency.CvssV2;
+import org.owasp.dependencycheck.dependency.CvssV3;
+import us.springett.parsers.cpe.Cpe;
+import us.springett.parsers.cpe.CpeParser;
+import us.springett.parsers.cpe.CpeParsingException;
 //CSON: AvoidStarImport
+
 /**
  * The database holding information about the NVD CVE data. This class is safe
  * to be accessed from multiple threads in parallel, however internally only one
@@ -111,6 +128,10 @@ public final class CveDB implements AutoCloseable {
         /**
          * Key for SQL Statement.
          */
+        DELETE_CWE,
+        /**
+         * Key for SQL Statement.
+         */
         DELETE_VULNERABILITY,
         /**
          * Key for SQL Statement.
@@ -120,6 +141,10 @@ public final class CveDB implements AutoCloseable {
          * Key for SQL Statement.
          */
         INSERT_PROPERTY,
+        /**
+         * Key for SQL Statement.
+         */
+        INSERT_CWE,
         /**
          * Key for SQL Statement.
          */
@@ -152,6 +177,10 @@ public final class CveDB implements AutoCloseable {
          * Key for SQL Statement.
          */
         SELECT_PROPERTIES,
+        /**
+         * Key for SQL Statement.
+         */
+        SELECT_CWE,
         /**
          * Key for SQL Statement.
          */
@@ -312,9 +341,9 @@ public final class CveDB implements AutoCloseable {
      * Closes all prepared statements.
      */
     private synchronized void closeStatements() {
-        for (PreparedStatement preparedStatement : preparedStatements.values()) {
+        preparedStatements.values().forEach((preparedStatement) -> {
             DBUtils.closeStatement(preparedStatement);
-        }
+        });
     }
 
     /**
@@ -585,6 +614,7 @@ public final class CveDB implements AutoCloseable {
      */
     public synchronized Vulnerability getVulnerability(String cve) throws DatabaseException {
         ResultSet rsV = null;
+        ResultSet rsC = null;
         ResultSet rsR = null;
         ResultSet rsS = null;
         Vulnerability vuln = null;
@@ -597,22 +627,34 @@ public final class CveDB implements AutoCloseable {
                 vuln = new Vulnerability();
                 vuln.setName(cve);
                 vuln.setDescription(rsV.getString(2));
-                String cwe = rsV.getString(3);
-                if (cwe != null) {
-                    final String name = CweDB.getCweName(cwe);
-                    if (name != null) {
-                        cwe += ' ' + name;
-                    }
-                }
+
                 final int cveId = rsV.getInt(1);
-                vuln.setCwe(cwe);
-                vuln.setCvssScore(rsV.getFloat(4));
-                vuln.setCvssAccessVector(rsV.getString(5));
-                vuln.setCvssAccessComplexity(rsV.getString(6));
-                vuln.setCvssAuthentication(rsV.getString(7));
-                vuln.setCvssConfidentialityImpact(rsV.getString(8));
-                vuln.setCvssIntegrityImpact(rsV.getString(9));
-                vuln.setCvssAvailabilityImpact(rsV.getString(10));
+                //id, 2.description, 3. cvssV22Score, 4 cvssV2AccessVector, 5 cvssV2AccessComplexity, 
+                //6 cvssV2Authentication, 7 cvssV2ConfidentialityImpact, 8 cvssV2IntegrityImpact, 
+                //9 cvssV2AvailabilityImpact, 10 cvssV2Severity, 
+                if (rsV.getString(4) != null) {
+                    CvssV2 cvss = new CvssV2(rsV.getFloat(3), rsV.getString(4),
+                            rsV.getString(5), rsV.getString(6), rsV.getString(7),
+                            rsV.getString(7), rsV.getString(9), rsV.getString(10));
+                    vuln.setCvssV2(cvss);
+                }
+                //11 cvssV3AttackVector, 12 cvssV3AttackComplexity, 13 cvssV3PrivilegesRequired, 
+                //14 cvssV3UserInteraction, 15 cvssV3Scope, 16 cvssV3ConfidentialityImpact, 
+                //17 cvssV3IntegrityImpact, 18 cvssV3AvailabilityImpact, 19 cvssV3BaseScore, 
+                //20 cvssV3BaseSeverity
+                if (rsV.getString(11) != null) {
+                    CvssV3 cvss = new CvssV3(rsV.getString(11), rsV.getString(12),
+                            rsV.getString(13), rsV.getString(14), rsV.getString(15),
+                            rsV.getString(16), rsV.getString(17), rsV.getString(18),
+                            rsV.getFloat(19), rsV.getString(20));
+                    vuln.setCvssV3(cvss);
+                }
+                final PreparedStatement psCWE = getPreparedStatement(SELECT_CWE);
+                psCWE.setInt(1, cveId);
+                rsC = psCWE.executeQuery();
+                while (rsC.next()) {
+                    vuln.addCwe(rsC.getString(1));
+                }
 
                 final PreparedStatement psR = getPreparedStatement(SELECT_REFERENCES);
                 psR.setInt(1, cveId);
@@ -638,6 +680,7 @@ public final class CveDB implements AutoCloseable {
             throw new DatabaseException("Error retrieving " + cve, ex);
         } finally {
             DBUtils.closeResultSet(rsV);
+            DBUtils.closeResultSet(rsC);
             DBUtils.closeResultSet(rsR);
             DBUtils.closeResultSet(rsS);
         }
@@ -648,16 +691,18 @@ public final class CveDB implements AutoCloseable {
      * Updates the vulnerability within the database. If the vulnerability does
      * not exist it will be added.
      *
-     * @param vuln the vulnerability to add to the database
+     * @param cve the vulnerability from the NVD CVE Data Feed to add to the
+     * database
      * @throws DatabaseException is thrown if the database
      */
-    public synchronized void updateVulnerability(Vulnerability vuln) throws DatabaseException {
+    public void updateVulnerability(CVEItem cve) {
         clearCache();
         ResultSet rs = null;
+        String cveId = cve.getCve().getCVEDataMeta().getID();
         try {
             int vulnerabilityId = 0;
             final PreparedStatement selectVulnerabilityId = getPreparedStatement(SELECT_VULNERABILITY_ID);
-            selectVulnerabilityId.setString(1, vuln.getName());
+            selectVulnerabilityId.setString(1, cveId);
             rs = selectVulnerabilityId.executeQuery();
             if (rs.next()) {
                 vulnerabilityId = rs.getInt(1);
@@ -669,61 +714,161 @@ public final class CveDB implements AutoCloseable {
                 final PreparedStatement deleteSoftware = getPreparedStatement(DELETE_SOFTWARE);
                 deleteSoftware.setInt(1, vulnerabilityId);
                 deleteSoftware.execute();
+
+                final PreparedStatement deleteCwe = getPreparedStatement(DELETE_CWE);
+                deleteCwe.setInt(1, vulnerabilityId);
+                deleteCwe.execute();
             }
 
             DBUtils.closeResultSet(rs);
 
+            final String description = cve.getCve().getDescription().getDescriptionData().stream().filter((desc)
+                    -> ("en".equals(desc.getLang()))).map(d
+                    -> d.getValue()).collect(Collectors.joining(" "));
+
             if (vulnerabilityId != 0) {
-                if (vuln.getDescription().contains("** REJECT **")) {
+                //TODO what about cve.getCve().getCVEDataMeta().getSTATE()
+                if (description.contains("** REJECT **")) {
                     final PreparedStatement deleteVulnerability = getPreparedStatement(DELETE_VULNERABILITY);
                     deleteVulnerability.setInt(1, vulnerabilityId);
                     deleteVulnerability.executeUpdate();
                 } else {
                     final PreparedStatement updateVulnerability = getPreparedStatement(UPDATE_VULNERABILITY);
-                    updateVulnerability.setString(1, vuln.getDescription());
-                    updateVulnerability.setString(2, vuln.getCwe());
-                    updateVulnerability.setFloat(3, vuln.getCvssScore());
-                    updateVulnerability.setString(4, vuln.getCvssAccessVector());
-                    updateVulnerability.setString(5, vuln.getCvssAccessComplexity());
-                    updateVulnerability.setString(6, vuln.getCvssAuthentication());
-                    updateVulnerability.setString(7, vuln.getCvssConfidentialityImpact());
-                    updateVulnerability.setString(8, vuln.getCvssIntegrityImpact());
-                    updateVulnerability.setString(9, vuln.getCvssAvailabilityImpact());
-                    updateVulnerability.setInt(10, vulnerabilityId);
+                    //description=?, cvssV2Score=?, cvssV2AccessVector=?, cvssV2AccessComplexity=?, cvssV2Authentication=?, cvssV2ConfidentialityImpact=?, cvssV2IntegrityImpact=?, cvssV2AvailabilityImpact=?, cvssV2Severity=?, cvssV3AttackVector=?, cvssV3AttackComplexity=?, cvssV3PrivilegesRequired=?, cvssV3UserInteraction=?, cvssV3Scope=?, cvssV3ConfidentialityImpact=?, cvssV3IntegrityImpact=?, cvssV3AvailabilityImpact=?, cvssV3BaseScore=?, cvssV3BaseSeverity=? WHERE id=?
+                    updateVulnerability.setString(1, description);
+                    if (cve.getImpact().getBaseMetricV2() != null) {
+                        BaseMetricV2 cvssv2 = cve.getImpact().getBaseMetricV2();
+                        updateVulnerability.setFloat(2, cvssv2.getCvssV2().getBaseScore().floatValue());
+                        updateVulnerability.setString(3, cvssv2.getCvssV2().getAccessVector().value());
+                        updateVulnerability.setString(4, cvssv2.getCvssV2().getAccessComplexity().value());
+                        updateVulnerability.setString(5, cvssv2.getCvssV2().getAuthentication().value());
+                        updateVulnerability.setString(6, cvssv2.getCvssV2().getConfidentialityImpact().value());
+                        updateVulnerability.setString(7, cvssv2.getCvssV2().getIntegrityImpact().value());
+                        updateVulnerability.setString(8, cvssv2.getCvssV2().getAvailabilityImpact().value());
+                        updateVulnerability.setString(9, cvssv2.getSeverity());
+                    } else {
+                        updateVulnerability.setNull(2, java.sql.Types.NULL);
+                        updateVulnerability.setNull(3, java.sql.Types.NULL);
+                        updateVulnerability.setNull(4, java.sql.Types.NULL);
+                        updateVulnerability.setNull(5, java.sql.Types.NULL);
+                        updateVulnerability.setNull(6, java.sql.Types.NULL);
+                        updateVulnerability.setNull(7, java.sql.Types.NULL);
+                        updateVulnerability.setNull(8, java.sql.Types.NULL);
+                        updateVulnerability.setNull(9, java.sql.Types.NULL);
+                    }
+
+                    //cvssV3AttackVector=?, cvssV3AttackComplexity=?, cvssV3PrivilegesRequired=?, 
+                    //cvssV3UserInteraction=?, cvssV3Scope=?, cvssV3ConfidentialityImpact=?, 
+                    //cvssV3IntegrityImpact=?, cvssV3AvailabilityImpact=?, cvssV3BaseScore=?,
+                    //cvssV3BaseSeverity
+                    if (cve.getImpact().getBaseMetricV3() != null) {
+                        BaseMetricV3 cvssv3 = cve.getImpact().getBaseMetricV3();
+                        updateVulnerability.setString(10, cvssv3.getCvssV3().getAttackVector().value());
+                        updateVulnerability.setString(11, cvssv3.getCvssV3().getAttackComplexity().value());
+                        updateVulnerability.setString(12, cvssv3.getCvssV3().getPrivilegesRequired().value());
+                        updateVulnerability.setString(13, cvssv3.getCvssV3().getUserInteraction().value());
+                        updateVulnerability.setString(14, cvssv3.getCvssV3().getScope().value());
+                        updateVulnerability.setString(15, cvssv3.getCvssV3().getConfidentialityImpact().value());
+                        updateVulnerability.setString(16, cvssv3.getCvssV3().getIntegrityImpact().value());
+                        updateVulnerability.setString(17, cvssv3.getCvssV3().getAvailabilityImpact().value());
+                        updateVulnerability.setFloat(18, cvssv3.getCvssV3().getBaseScore().floatValue());
+                        updateVulnerability.setString(19, cvssv3.getCvssV3().getBaseSeverity().value());
+                    } else {
+                        updateVulnerability.setNull(10, java.sql.Types.NULL);
+                        updateVulnerability.setNull(11, java.sql.Types.NULL);
+                        updateVulnerability.setNull(12, java.sql.Types.NULL);
+                        updateVulnerability.setNull(13, java.sql.Types.NULL);
+                        updateVulnerability.setNull(14, java.sql.Types.NULL);
+                        updateVulnerability.setNull(15, java.sql.Types.NULL);
+                        updateVulnerability.setNull(16, java.sql.Types.NULL);
+                        updateVulnerability.setNull(17, java.sql.Types.NULL);
+                        updateVulnerability.setNull(18, java.sql.Types.NULL);
+                        updateVulnerability.setNull(19, java.sql.Types.NULL);
+                    }
+                    updateVulnerability.setInt(20, vulnerabilityId);
                     updateVulnerability.executeUpdate();
                 }
             } else {
                 final PreparedStatement insertVulnerability = getPreparedStatement(INSERT_VULNERABILITY);
-                insertVulnerability.setString(1, vuln.getName());
-                insertVulnerability.setString(2, vuln.getDescription());
-                insertVulnerability.setString(3, vuln.getCwe());
-                insertVulnerability.setFloat(4, vuln.getCvssScore());
-                insertVulnerability.setString(5, vuln.getCvssAccessVector());
-                insertVulnerability.setString(6, vuln.getCvssAccessComplexity());
-                insertVulnerability.setString(7, vuln.getCvssAuthentication());
-                insertVulnerability.setString(8, vuln.getCvssConfidentialityImpact());
-                insertVulnerability.setString(9, vuln.getCvssIntegrityImpact());
-                insertVulnerability.setString(10, vuln.getCvssAvailabilityImpact());
+                //cve, description, cvssV2Score, cvssV2AccessVector, cvssV2AccessComplexity, cvssV2Authentication, cvssV2ConfidentialityImpact, cvssV2IntegrityImpact, cvssV2AvailabilityImpact, cvssV2Severity, cvssV3AttackVector, cvssV3AttackComplexity, cvssV3PrivilegesRequired, cvssV3UserInteraction, cvssV3Scope, cvssV3ConfidentialityImpact, cvssV3IntegrityImpact, cvssV3AvailabilityImpact, cvssV3BaseScore, cvssV3BaseSeverity
+                insertVulnerability.setString(1, cve.getCve().getCVEDataMeta().getID());
+                insertVulnerability.setString(2, description);
+                if (cve.getImpact().getBaseMetricV2() != null) {
+                    BaseMetricV2 cvssv2 = cve.getImpact().getBaseMetricV2();
+                    insertVulnerability.setFloat(3, cvssv2.getCvssV2().getBaseScore().floatValue());
+                    insertVulnerability.setString(4, cvssv2.getCvssV2().getAccessVector().value());
+                    insertVulnerability.setString(5, cvssv2.getCvssV2().getAccessComplexity().value());
+                    insertVulnerability.setString(6, cvssv2.getCvssV2().getAuthentication().value());
+                    insertVulnerability.setString(7, cvssv2.getCvssV2().getConfidentialityImpact().value());
+                    insertVulnerability.setString(8, cvssv2.getCvssV2().getIntegrityImpact().value());
+                    insertVulnerability.setString(9, cvssv2.getCvssV2().getAvailabilityImpact().value());
+                    insertVulnerability.setString(10, cvssv2.getSeverity());
+                } else {
+                    insertVulnerability.setNull(3, java.sql.Types.NULL);
+                    insertVulnerability.setNull(4, java.sql.Types.NULL);
+                    insertVulnerability.setNull(5, java.sql.Types.NULL);
+                    insertVulnerability.setNull(6, java.sql.Types.NULL);
+                    insertVulnerability.setNull(7, java.sql.Types.NULL);
+                    insertVulnerability.setNull(8, java.sql.Types.NULL);
+                    insertVulnerability.setNull(9, java.sql.Types.NULL);
+                    insertVulnerability.setNull(10, java.sql.Types.NULL);
+                }
+                if (cve.getImpact().getBaseMetricV3() != null) {
+                    BaseMetricV3 cvssv3 = cve.getImpact().getBaseMetricV3();
+                    insertVulnerability.setString(11, cvssv3.getCvssV3().getAttackVector().value());
+                    insertVulnerability.setString(12, cvssv3.getCvssV3().getAttackComplexity().value());
+                    insertVulnerability.setString(13, cvssv3.getCvssV3().getPrivilegesRequired().value());
+                    insertVulnerability.setString(14, cvssv3.getCvssV3().getUserInteraction().value());
+                    insertVulnerability.setString(15, cvssv3.getCvssV3().getScope().value());
+                    insertVulnerability.setString(16, cvssv3.getCvssV3().getConfidentialityImpact().value());
+                    insertVulnerability.setString(17, cvssv3.getCvssV3().getIntegrityImpact().value());
+                    insertVulnerability.setString(18, cvssv3.getCvssV3().getAvailabilityImpact().value());
+                    insertVulnerability.setFloat(19, cvssv3.getCvssV3().getBaseScore().floatValue());
+                    insertVulnerability.setString(20, cvssv3.getCvssV3().getBaseSeverity().value());
+                } else {
+                    insertVulnerability.setNull(11, java.sql.Types.NULL);
+                    insertVulnerability.setNull(12, java.sql.Types.NULL);
+                    insertVulnerability.setNull(13, java.sql.Types.NULL);
+                    insertVulnerability.setNull(14, java.sql.Types.NULL);
+                    insertVulnerability.setNull(15, java.sql.Types.NULL);
+                    insertVulnerability.setNull(16, java.sql.Types.NULL);
+                    insertVulnerability.setNull(17, java.sql.Types.NULL);
+                    insertVulnerability.setNull(18, java.sql.Types.NULL);
+                    insertVulnerability.setNull(19, java.sql.Types.NULL);
+                    insertVulnerability.setNull(20, java.sql.Types.NULL);
+                }
                 insertVulnerability.execute();
                 try {
                     rs = insertVulnerability.getGeneratedKeys();
                     rs.next();
                     vulnerabilityId = rs.getInt(1);
                 } catch (SQLException ex) {
-                    final String msg = String.format("Unable to retrieve id for new vulnerability for '%s'", vuln.getName());
+                    final String msg = String.format("Unable to retrieve id for new vulnerability for '%s'", cve.getCve().getCVEDataMeta().getID());
                     throw new DatabaseException(msg, ex);
                 } finally {
                     DBUtils.closeResultSet(rs);
                 }
             }
+            PreparedStatement insertCWE = getPreparedStatement(INSERT_CWE);
+            insertCWE.setInt(1, vulnerabilityId);
+
+            for (ProblemtypeDatum datum : cve.getCve().getProblemtype().getProblemtypeData()) {
+                for (Description desc : datum.getDescription()) {
+                    if ("en".equals(desc.getLang())) {
+                        insertCWE.setString(2, desc.getValue());
+                        insertCWE.execute();
+                    }
+                }
+            }
 
             PreparedStatement insertReference = getPreparedStatement(INSERT_REFERENCE);
             int countReferences = 0;
-            for (Reference r : vuln.getReferences()) {
+
+            for (ReferenceDatum r : cve.getCve().getReferences().getReferenceData()) {
                 insertReference.setInt(1, vulnerabilityId);
                 insertReference.setString(2, r.getName());
                 insertReference.setString(3, r.getUrl());
-                insertReference.setString(4, r.getSource());
+                insertReference.setString(4, r.getRefsource());
                 if (isBatchInsertEnabled()) {
                     insertReference.addBatch();
                     countReferences++;
@@ -732,7 +877,7 @@ public final class CveDB implements AutoCloseable {
                         insertReference = getPreparedStatement(INSERT_REFERENCE);
                         LOGGER.trace(getLogForBatchInserts(countReferences, "Completed %s batch inserts to references table: %s"));
                         countReferences = 0;
-                    } else if (countReferences == vuln.getReferences().size()) {
+                    } else if (countReferences == cve.getCve().getReferences().getReferenceData().size()) {
                         if (LOGGER.isTraceEnabled()) {
                             LOGGER.trace(getLogForBatchInserts(countReferences, "Completed %s batch inserts to reference table: %s"));
                         }
@@ -745,27 +890,42 @@ public final class CveDB implements AutoCloseable {
             }
 
             PreparedStatement insertSoftware = getPreparedStatement(INSERT_SOFTWARE);
-            int countSoftware = 0;
-            for (VulnerableSoftware vulnerableSoftware : vuln.getVulnerableSoftware()) {
+
+            //collect the CpeMatch from a what could be a deeply nested structure.
+            //TODO - some nodes *could* have a parent with negate=true... but I have not seen an example yet
+            String cpeStartsWithFilter = settings.getString(Settings.KEYS.CVE_CPE_STARTS_WITH_FILTER, "cpe:2.3:a:");
+            List<CpeMatch> cpeEntries = cve.getConfigurations().getNodes().stream()
+                    .map(node -> new ConfigurationNodeExtension(node))
+                    .map(ConfigurationNodeExtension::streamNodes)
+                    .flatMap(ConfigurationNodeExtension::streamCpeMatches)
+                    .filter(cpe -> cpe.getCpe23Uri().startsWith(cpeStartsWithFilter))
+                    .collect(Collectors.toList());
+
+            for (CpeMatch cpe : cpeEntries) {
+                final Cpe parsedCpe;
+                try {
+                    parsedCpe = CpeParser.parse(cpe.getCpe23Uri());
+                } catch (CpeParsingException ex) {
+                    throw new DatabaseException("Unable to parse CPE: " + cpe.getCpe23Uri(), ex);
+                }
                 int cpeProductId = 0;
                 final PreparedStatement selectCpeId = getPreparedStatement(SELECT_CPE_ID);
-                selectCpeId.setString(1, vulnerableSoftware.getName());
+                selectCpeId.setString(1, cpe.getCpe23Uri());
                 try {
                     rs = selectCpeId.executeQuery();
                     if (rs.next()) {
                         cpeProductId = rs.getInt(1);
                     }
                 } catch (SQLException ex) {
-                    throw new DatabaseException("Unable to get primary key for new cpe: " + vulnerableSoftware.getName(), ex);
+                    throw new DatabaseException("Unable to get primary key for new cpe: " + cpe.getCpe23Uri(), ex);
                 } finally {
                     DBUtils.closeResultSet(rs);
                 }
-
                 if (cpeProductId == 0) {
                     final PreparedStatement insertCpe = getPreparedStatement(INSERT_CPE);
-                    insertCpe.setString(1, vulnerableSoftware.getName());
-                    insertCpe.setString(2, vulnerableSoftware.getVendor());
-                    insertCpe.setString(3, vulnerableSoftware.getProduct());
+                    insertCpe.setString(1, cpe.getCpe23Uri());
+                    insertCpe.setString(2, parsedCpe.getVendor());
+                    insertCpe.setString(3, parsedCpe.getProduct());
                     insertCpe.executeUpdate();
                     cpeProductId = DBUtils.getGeneratedKey(insertCpe);
                 }
@@ -775,33 +935,20 @@ public final class CveDB implements AutoCloseable {
 
                 insertSoftware.setInt(1, vulnerabilityId);
                 insertSoftware.setInt(2, cpeProductId);
+                addNullableStringParameter(insertSoftware, 3, cpe.getVersionEndExcluding());
+                addNullableStringParameter(insertSoftware, 4, cpe.getVersionEndIncluding());
+                addNullableStringParameter(insertSoftware, 5, cpe.getVersionStartExcluding());
+                addNullableStringParameter(insertSoftware, 6, cpe.getVersionStartIncluding());
+                insertSoftware.setBoolean(7, cpe.getVulnerable());
 
-                if (vulnerableSoftware.getPreviousVersion() == null) {
-                    insertSoftware.setNull(3, java.sql.Types.VARCHAR);
-                } else {
-                    insertSoftware.setString(3, vulnerableSoftware.getPreviousVersion());
-                }
                 if (isBatchInsertEnabled()) {
                     insertSoftware.addBatch();
-                    countSoftware++;
-                    if (countSoftware % getBatchSize() == 0) {
-                        executeBatch(vuln, vulnerableSoftware, insertSoftware);
-                        insertSoftware = getPreparedStatement(INSERT_SOFTWARE);
-                        LOGGER.trace(getLogForBatchInserts(countSoftware, "Completed %s batch inserts software table: %s"));
-                        countSoftware = 0;
-                    } else if (countSoftware == vuln.getVulnerableSoftware().size()) {
-                        if (LOGGER.isTraceEnabled()) {
-                            LOGGER.trace(getLogForBatchInserts(countSoftware, "Completed %s batch inserts software table: %s"));
-                            countReferences = 0;
-                        }
-                        executeBatch(vuln, vulnerableSoftware, insertSoftware);
-                    }
                 } else {
                     try {
                         insertSoftware.execute();
                     } catch (SQLException ex) {
                         if (ex.getMessage().contains("Duplicate entry")) {
-                            final String msg = String.format("Duplicate software key identified in '%s:%s'", vuln.getName(), vuln.getName());
+                            final String msg = String.format("Duplicate software key identified in '%s'", cveId);
                             LOGGER.info(msg, ex);
                         } else {
                             throw ex;
@@ -809,8 +956,12 @@ public final class CveDB implements AutoCloseable {
                     }
                 }
             }
+            if (isBatchInsertEnabled()) {
+                executeBatch(cveId, insertSoftware);
+            }
+
         } catch (SQLException ex) {
-            final String msg = String.format("Error updating '%s'", vuln.getName());
+            final String msg = String.format("Error updating '%s'", cveId);
             LOGGER.debug(msg, ex);
             throw new DatabaseException(msg, ex);
         } finally {
@@ -865,19 +1016,18 @@ public final class CveDB implements AutoCloseable {
      * Executes batch inserts of vulnerabilities when property
      * database.batchinsert.maxsize is reached.
      *
-     * @param pVulnerability the vulnerability
-     * @param pVulnerableSoftware the vulnerable software
-     * @param pInsertSoftware the prepared statement to batch execute
+     * @param vulnId the vulnerability ID
+     * @param statement the prepared statement to batch execute
      * @throws SQLException thrown when the batch cannot be executed
      */
-    private void executeBatch(Vulnerability pVulnerability, VulnerableSoftware pVulnerableSoftware, PreparedStatement pInsertSoftware)
+    private void executeBatch(String vulnId, PreparedStatement statement)
             throws SQLException {
         try {
-            pInsertSoftware.executeBatch();
+            statement.executeBatch();
         } catch (SQLException ex) {
             if (ex.getMessage().contains("Duplicate entry")) {
-                final String msg = String.format("Duplicate software key identified in '%s:%s'",
-                        pVulnerability.getName(), pVulnerableSoftware.getName());
+                final String msg = String.format("Duplicate software key identified in '%s'",
+                        vulnId);
                 LOGGER.info(msg, ex);
             } else {
                 throw ex;
@@ -1095,6 +1245,14 @@ public final class CveDB implements AutoCloseable {
             LOGGER.error("Unable to add CPE dictionary entry", ex);
         } finally {
             DBUtils.closeStatement(ps);
+        }
+    }
+
+    private void addNullableStringParameter(PreparedStatement ps, int pos, String value) throws SQLException {
+        if (value == null || value.isEmpty()) {
+            ps.setNull(pos, java.sql.Types.VARCHAR);
+        } else {
+            ps.setString(pos, value);
         }
     }
 }

@@ -43,6 +43,7 @@ import static org.owasp.dependencycheck.data.update.nvd.NvdCve20Handler.Attribut
  * @author Jeremy Long
  */
 @NotThreadSafe
+@Deprecated
 public class NvdCve20Handler extends DefaultHandler {
 
     /**
@@ -195,29 +196,29 @@ public class NvdCve20Handler extends DefaultHandler {
         } else if (current.isCVSSScoreNode()) {
             try {
                 final float score = Float.parseFloat(nodeText.toString());
-                vulnerability.setCvssScore(score);
+                vulnerability.setCvssV2Score(score);
             } catch (NumberFormatException ex) {
                 LOGGER.error("Error parsing CVSS Score.");
                 LOGGER.debug("", ex);
             }
             nodeText = null;
         } else if (current.isCVSSAccessVectorNode()) {
-            vulnerability.setCvssAccessVector(nodeText.toString());
+            vulnerability.setCvssV2AccessVector(nodeText.toString());
             nodeText = null;
         } else if (current.isCVSSAccessComplexityNode()) {
-            vulnerability.setCvssAccessComplexity(nodeText.toString());
+            vulnerability.setCvssV2AccessComplexity(nodeText.toString());
             nodeText = null;
         } else if (current.isCVSSAuthenticationNode()) {
-            vulnerability.setCvssAuthentication(nodeText.toString());
+            vulnerability.setCvssV2Authentication(nodeText.toString());
             nodeText = null;
         } else if (current.isCVSSAvailabilityImpactNode()) {
-            vulnerability.setCvssAvailabilityImpact(nodeText.toString());
+            vulnerability.setCvssV2AvailabilityImpact(nodeText.toString());
             nodeText = null;
         } else if (current.isCVSSConfidentialityImpactNode()) {
-            vulnerability.setCvssConfidentialityImpact(nodeText.toString());
+            vulnerability.setCvssV2ConfidentialityImpact(nodeText.toString());
             nodeText = null;
         } else if (current.isCVSSIntegrityImpactNode()) {
-            vulnerability.setCvssIntegrityImpact(nodeText.toString());
+            vulnerability.setCvssV2IntegrityImpact(nodeText.toString());
             nodeText = null;
         } else if (current.isVulnProductNode()) {
             final String cpe = nodeText.toString();

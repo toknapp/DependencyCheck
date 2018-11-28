@@ -101,6 +101,24 @@ Copyright (c) 2012 Jeremy Long. All Rights Reserved.
         </testResources>
         <plugins>
             <plugin>
+                <groupId>org.jsonschema2pojo</groupId>
+                <artifactId>jsonschema2pojo-maven-plugin</artifactId>
+                <configuration>
+                    <sourceDirectory>${basedir}/src/main/resources/schema/nvdcve/json</sourceDirectory>
+                    <outputDirectory>${project.build.directory}/generated-sources/java</outputDirectory>
+                    <includeGetters>true</includeGetters>
+                    <annotationStyle>gson</annotationStyle>
+                    <targetPackage>org.owasp.dependencycheck.data.nvd.json</targetPackage>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
@@ -142,6 +160,10 @@ Copyright (c) 2012 Jeremy Long. All Rights Reserved.
         </plugins>
     </build>
     <dependencies>
+        <dependency>
+            <groupId>us.springett</groupId>
+            <artifactId>cpe-parser</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.vdurmont</groupId>
             <artifactId>semver4j</artifactId>

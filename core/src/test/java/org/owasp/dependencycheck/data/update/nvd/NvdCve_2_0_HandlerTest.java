@@ -36,58 +36,59 @@ import org.xml.sax.SAXException;
  *
  * @author Jeremy Long
  */
+@Deprecated
 public class NvdCve_2_0_HandlerTest extends BaseTest {
-
-    @Test
-    public void testParse() {
-        Throwable results = null;
-        try {
-            SAXParserFactory factory = SAXParserFactory.newInstance();
-            SAXParser saxParser = factory.newSAXParser();
-
-            //File file = new File(this.getClass().getClassLoader().getResource("nvdcve-2.0-2012.xml").getPath());
-            File file = BaseTest.getResourceAsFile(this, "nvdcve-2.0-2012.xml");
-
-            NvdCve20Handler instance = new NvdCve20Handler();
-
-            saxParser.parse(file, instance);
-        } catch (ParserConfigurationException | SAXException | IOException ex) {
-            ex.printStackTrace();
-            results = ex;
-        }
-        assertTrue("Exception thrown during parse of 2012 CVE version 2.0?", results == null);
-        if (results != null) {
-            System.err.println(results);
-        }
-    }
-
-    @Test
-    public void testParserWithPreviousVersion() {
-        Throwable results = null;
-        try {
-            SAXParserFactory factory = SAXParserFactory.newInstance();
-            SAXParser saxParser = factory.newSAXParser();
-
-            File file12 = BaseTest.getResourceAsFile(this, "cve-1.2-2008_4411.xml");
-            
-            final NvdCve12Handler cve12Handler = new NvdCve12Handler();
-            saxParser.parse(file12, cve12Handler);
-            final Map<String, List<VulnerableSoftware>> prevVersionVulnMap = cve12Handler.getVulnerabilities();
-
-            //File file = new File(this.getClass().getClassLoader().getResource("nvdcve-2.0-2012.xml").getPath());
-            File file20 = BaseTest.getResourceAsFile(this, "cve-2.0-2008_4411.xml");
-
-            NvdCve20Handler instance = new NvdCve20Handler();
-            instance.setPrevVersionVulnMap(prevVersionVulnMap);
-            saxParser.parse(file20, instance);
-
-            assertTrue(instance.getTotalNumberOfEntries()==1);            
-        } catch (ParserConfigurationException | SAXException | IOException ex) {
-            results = ex;
-        }
-        assertTrue("Exception thrown during parse of 2012 CVE version 2.0?", results == null);
-        if (results != null) {
-            System.err.println(results);
-        }
-    }
+//
+//    @Test
+//    public void testParse() {
+//        Throwable results = null;
+//        try {
+//            SAXParserFactory factory = SAXParserFactory.newInstance();
+//            SAXParser saxParser = factory.newSAXParser();
+//
+//            //File file = new File(this.getClass().getClassLoader().getResource("nvdcve-2.0-2012.xml").getPath());
+//            File file = BaseTest.getResourceAsFile(this, "nvdcve-2.0-2012.xml");
+//
+//            NvdCve20Handler instance = new NvdCve20Handler();
+//
+//            saxParser.parse(file, instance);
+//        } catch (ParserConfigurationException | SAXException | IOException ex) {
+//            ex.printStackTrace();
+//            results = ex;
+//        }
+//        assertTrue("Exception thrown during parse of 2012 CVE version 2.0?", results == null);
+//        if (results != null) {
+//            System.err.println(results);
+//        }
+//    }
+//
+//    @Test
+//    public void testParserWithPreviousVersion() {
+//        Throwable results = null;
+//        try {
+//            SAXParserFactory factory = SAXParserFactory.newInstance();
+//            SAXParser saxParser = factory.newSAXParser();
+//
+//            File file12 = BaseTest.getResourceAsFile(this, "cve-1.2-2008_4411.xml");
+//            
+//            final NvdCve12Handler cve12Handler = new NvdCve12Handler();
+//            saxParser.parse(file12, cve12Handler);
+//            final Map<String, List<VulnerableSoftware>> prevVersionVulnMap = cve12Handler.getVulnerabilities();
+//
+//            //File file = new File(this.getClass().getClassLoader().getResource("nvdcve-2.0-2012.xml").getPath());
+//            File file20 = BaseTest.getResourceAsFile(this, "cve-2.0-2008_4411.xml");
+//
+//            NvdCve20Handler instance = new NvdCve20Handler();
+//            instance.setPrevVersionVulnMap(prevVersionVulnMap);
+//            saxParser.parse(file20, instance);
+//
+//            assertTrue(instance.getTotalNumberOfEntries()==1);            
+//        } catch (ParserConfigurationException | SAXException | IOException ex) {
+//            results = ex;
+//        }
+//        assertTrue("Exception thrown during parse of 2012 CVE version 2.0?", results == null);
+//        if (results != null) {
+//            System.err.println(results);
+//        }
+//    }
 }

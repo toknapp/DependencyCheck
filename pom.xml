@@ -210,6 +210,11 @@ Copyright (c) 2012 - Jeremy Long
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.jsonschema2pojo</groupId>
+                    <artifactId>jsonschema2pojo-maven-plugin</artifactId>
+                    <version>0.5.1</version>
+                </plugin>
+                <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>appassembler-maven-plugin</artifactId>
                     <version>2.0.0</version>
@@ -790,6 +795,11 @@ Copyright (c) 2012 - Jeremy Long
     </reporting>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>us.springett</groupId>
+                <artifactId>cpe-parser</artifactId>
+                <version>1.0.0</version>
+            </dependency>
             <dependency>
                 <groupId>com.vdurmont</groupId>
                 <artifactId>semver4j</artifactId>

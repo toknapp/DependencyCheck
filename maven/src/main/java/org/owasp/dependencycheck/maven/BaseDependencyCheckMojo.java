@@ -1838,7 +1838,7 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
         for (Dependency d : dependencies) {
             boolean addName = true;
             for (Vulnerability v : d.getVulnerabilities()) {
-                if (failBuildOnAnyVulnerability || v.getCvssScore() >= failBuildOnCVSS) {
+                if (failBuildOnAnyVulnerability || v.getCvssV2Score() >= failBuildOnCVSS) {
                     if (addName) {
                         addName = false;
                         ids.append(NEW_LINE).append(d.getFileName()).append(": ");

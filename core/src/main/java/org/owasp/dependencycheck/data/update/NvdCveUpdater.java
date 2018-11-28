@@ -388,13 +388,13 @@ public class NvdCveUpdater implements CachedWebDataSource {
     }
 
     /**
-     * Retrieves the timestamps from the NVD CVE meta data file.
+     * Retrieves the timestamps from the NVD CVE by checking the last modified date.
      *
-     * @return the timestamp from the currently published nvdcve downloads page
-     * @throws MalformedURLException thrown if the URL for the NVD CCE Meta data
+     * @return the last modified date from the currently published NVD CVE downloads page
+     * @throws MalformedURLException thrown if the URL for the NVD CVE data
      * is incorrect.
-     * @throws DownloadFailedException thrown if there is an error downloading
-     * the nvd cve meta data file
+     * @throws DownloadFailedException thrown if there is an error retrieving
+     * the time stamps from the NVD CVE
      * @throws InvalidDataException thrown if there is an exception parsing the
      * timestamps
      * @throws InvalidSettingException thrown if the settings are invalid
@@ -409,31 +409,29 @@ public class NvdCveUpdater implements CachedWebDataSource {
 
         final UpdateableNvdCve updates = new UpdateableNvdCve();
 
-        final String baseUrl20 = settings.getString(Settings.KEYS.CVE_SCHEMA_2_0);
-        final String baseUrl12 = settings.getString(Settings.KEYS.CVE_SCHEMA_1_2);
+        final String baseUrl = settings.getString(Settings.KEYS.CVE_BASE_JSON);
         for (int i = start; i <= end; i++) {
-            final String url = String.format(baseUrl20, i);
-            updates.add(Integer.toString(i), url, String.format(baseUrl12, i),
-                    lastModifiedDates.get(url), true);
+            final String url = String.format(baseUrl, i);
+            updates.add(Integer.toString(i), url, lastModifiedDates.get(url), true);
         }
 
-        final String url = settings.getString(Settings.KEYS.CVE_MODIFIED_20_URL);
-        updates.add(MODIFIED, url, settings.getString(Settings.KEYS.CVE_MODIFIED_12_URL),
+        final String url = settings.getString(Settings.KEYS.CVE_MODIFIED_JSON);
+        updates.add(MODIFIED, url,
                 lastModifiedDates.get(url), false);
         return updates;
     }
 
     /**
-     * Retrieves the timestamps from the NVD CVE meta data file.
+     * Retrieves the timestamps from the NVD CVE by checking the last modified date.
      *
      * @param startYear the first year whose item to check for the timestamp
      * @param endYear the last year whose item to check for the timestamp
      * @return the timestamps from the currently published NVD CVE downloads
      * page
-     * @throws MalformedURLException thrown if the URL for the NVD CCE Meta data
+     * @throws MalformedURLException thrown if the URL for the NVD CVE data
      * is incorrect.
-     * @throws DownloadFailedException thrown if there is an error downloading
-     * the NVD CVE meta data file
+     * @throws DownloadFailedException thrown if there is an error retrieving
+     * the time stamps from the NVD CVE
      */
     private Map<String, Long> retrieveLastModifiedDates(int startYear, int endYear)
             throws MalformedURLException, DownloadFailedException {

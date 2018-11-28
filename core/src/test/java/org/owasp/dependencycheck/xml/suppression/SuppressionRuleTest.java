@@ -504,7 +504,7 @@ public class SuppressionRuleTest extends BaseTest {
         Vulnerability v = new Vulnerability();
         v.setCwe("CWE-287 Improper Authentication");
         v.setName("CVE-2013-1337");
-        v.setCvssScore(7.5f);
+        v.setCvssV2Score(7.5f);
         return v;
     }
 }

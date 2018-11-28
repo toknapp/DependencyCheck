@@ -442,7 +442,7 @@ public class SuppressionRule {
                 }
                 if (!remove) {
                     for (float cvss : this.cvssBelow) {
-                        if (v.getCvssScore() < cvss) {
+                        if (v.getCvssV2Score() < cvss) {
                             remove = true;
                             removeVulns.add(v);
                             break;
