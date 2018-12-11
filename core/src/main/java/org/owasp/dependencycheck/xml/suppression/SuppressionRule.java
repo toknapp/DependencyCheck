@@ -428,11 +428,7 @@ public class SuppressionRule {
                     for (String entry : this.cwe) {
                         if (v.getCwe() != null) {
                             final String toMatch = String.format("CWE-%s", entry);
-                            String toTest = v.getCwe();
-                            if (toTest.contains(" ")) {
-                                toTest = toTest.substring(0, toTest.indexOf(" ")).toUpperCase();
-                            }
-                            if (toTest.equals(toMatch)) {
+                            if (v.getCwe().stream().anyMatch(toTest -> toMatch.regionMatches(0, toTest, 0, toMatch.length()))) {
                                 remove = true;
                                 removeVulns.add(v);
                                 break;
@@ -442,7 +438,7 @@ public class SuppressionRule {
                 }
                 if (!remove) {
                     for (float cvss : this.cvssBelow) {
-                        if (v.getCvssV2Score() < cvss) {
+                        if (v.getCvssV2().getScore() < cvss) {
                             remove = true;
                             removeVulns.add(v);
                             break;

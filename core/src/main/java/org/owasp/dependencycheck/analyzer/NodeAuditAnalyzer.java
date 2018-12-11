@@ -43,9 +43,12 @@ import javax.json.JsonException;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import org.owasp.dependencycheck.analyzer.exception.SearchException;
+import org.owasp.dependencycheck.dependency.VulnerableSoftwareBuilder;
 import org.owasp.dependencycheck.exception.InitializationException;
 import org.owasp.dependencycheck.utils.InvalidSettingException;
 import org.owasp.dependencycheck.utils.URLConnectionFailureException;
+import us.springett.parsers.cpe.exceptions.CpeValidationException;
+import us.springett.parsers.cpe.values.Part;
 
 /**
  * Used to analyze Node Package Manager (npm) package-lock.json and
@@ -79,7 +82,8 @@ public class NodeAuditAnalyzer extends AbstractNpmAnalyzer {
     public static final String SHRINKWRAP_JSON = "npm-shrinkwrap.json";
 
     /**
-     * Filter that detects files named "package-lock.json or npm-shrinkwrap.json".
+     * Filter that detects files named "package-lock.json or
+     * npm-shrinkwrap.json".
      */
     private static final FileFilter PACKAGE_JSON_FILTER = FileFilterBuilder.newInstance()
             .addFilenames(PACKAGE_LOCK_JSON, SHRINKWRAP_JSON).build();
@@ -159,7 +163,7 @@ public class NodeAuditAnalyzer extends AbstractNpmAnalyzer {
 
     @Override
     protected void analyzeDependency(Dependency dependency, Engine engine) throws AnalysisException {
-        if (dependency.getDisplayFileName().equals(dependency.getFileName()))  {
+        if (dependency.getDisplayFileName().equals(dependency.getFileName())) {
             engine.removeDependency(dependency);
         }
         final File file = dependency.getActualFile();
@@ -196,12 +200,9 @@ public class NodeAuditAnalyzer extends AbstractNpmAnalyzer {
                 /*
                  * Create a single vulnerable software object - these do not use CPEs unlike the NVD.
                  */
-                final VulnerableSoftware vs = new VulnerableSoftware();
-                //TODO consider changing this to available versions on the dependency
-                //  - the update is a part of the version, not versions to update to
-                //vs.setUpdate(advisory.getPatchedVersions());
-
-                vs.setName(advisory.getModuleName() + ":" + advisory.getVulnerableVersions());
+                VulnerableSoftwareBuilder builder = new VulnerableSoftwareBuilder();
+                builder.part(Part.APPLICATION).product(advisory.getModuleName()).version(advisory.getVulnerableVersions());
+                final VulnerableSoftware vs = builder.build();
                 vuln.setVulnerableSoftware(new HashSet<>(Arrays.asList(vs)));
 
                 final Dependency existing = findDependency(engine, advisory.getModuleName(), advisory.getVersion());
@@ -228,6 +229,8 @@ public class NodeAuditAnalyzer extends AbstractNpmAnalyzer {
         } catch (SearchException ex) {
             LOGGER.error("NodeAuditAnalyzer failed on {}", dependency.getActualFilePath());
             throw ex;
+        } catch (CpeValidationException ex) {
+            throw new RuntimeException(ex);
         }
     }
 }

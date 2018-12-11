@@ -37,15 +37,21 @@ import org.owasp.dependencycheck.analyzer.exception.AnalysisException;
 import org.owasp.dependencycheck.data.nvdcve.CveDB;
 import org.owasp.dependencycheck.data.nvdcve.DatabaseException;
 import org.owasp.dependencycheck.dependency.Confidence;
+import org.owasp.dependencycheck.dependency.CvssV2;
 import org.owasp.dependencycheck.dependency.Dependency;
 import org.owasp.dependencycheck.dependency.EvidenceType;
 import org.owasp.dependencycheck.dependency.Reference;
 import org.owasp.dependencycheck.dependency.Vulnerability;
+import org.owasp.dependencycheck.dependency.VulnerableSoftware;
 import org.owasp.dependencycheck.exception.InitializationException;
 import org.owasp.dependencycheck.utils.FileFilterBuilder;
 import org.owasp.dependencycheck.utils.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import us.springett.parsers.cpe.Cpe;
+import us.springett.parsers.cpe.CpeBuilder;
+import us.springett.parsers.cpe.exceptions.CpeValidationException;
+import us.springett.parsers.cpe.values.Part;
 
 /**
  * Used to analyze Ruby Bundler Gemspec.lock files utilizing the 3rd party
@@ -303,7 +309,7 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
             try (BufferedReader rdr = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
                 processBundlerAuditOutput(dependency, engine, rdr);
             }
-        } catch (IOException ioe) {
+        } catch (IOException | CpeValidationException ioe) {
             LOGGER.warn("bundle-audit failure", ioe);
         }
     }
@@ -314,9 +320,11 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
      * @param original the dependency
      * @param engine the dependency-check engine
      * @param rdr the reader of the report
-     * @throws IOException thrown if the report cannot be read.
+     * @throws IOException thrown if the report cannot be read
+     * @throws CpeValidationException if there is an error building the
+     * CPE/VulnerableSoftware object
      */
-    private void processBundlerAuditOutput(Dependency original, Engine engine, BufferedReader rdr) throws IOException {
+    private void processBundlerAuditOutput(Dependency original, Engine engine, BufferedReader rdr) throws IOException, CpeValidationException {
         final String parentName = original.getActualFile().getParentFile().getName();
         final String fileName = original.getFileName();
         final String filePath = original.getFilePath();
@@ -416,13 +424,7 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
                 }
             }
             if (v != null) {
-                score = v.getCvssV2Score();
-                vulnerability.setCvssV2AccessComplexity(v.getCvssV2AccessComplexity());
-                vulnerability.setCvssV2AccessVector(v.getCvssV2AccessVector());
-                vulnerability.setCvssV2Authentication(v.getCvssV2Authentication());
-                vulnerability.setCvssV2AvailabilityImpact(v.getCvssV2AvailabilityImpact());
-                vulnerability.setCvssV2ConfidentialityImpact(v.getCvssV2ConfidentialityImpact());
-                vulnerability.setCvssV2IntegrityImpact(v.getCvssV2IntegrityImpact());
+                vulnerability.setCvssV2(v.getCvssV2());
             } else if ("High".equalsIgnoreCase(criticality)) {
                 score = 8.5f;
             } else if ("Medium".equalsIgnoreCase(criticality)) {
@@ -430,7 +432,7 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
             } else if ("Low".equalsIgnoreCase(criticality)) {
                 score = 2.0f;
             }
-            vulnerability.setCvssV2Score(score);
+            vulnerability.setCvssV2(new CvssV2(score, "-", "-", "-", "-", "-", "-", criticality));
         }
         LOGGER.debug("bundle-audit ({}): {}", parentName, nextLine);
     }
@@ -444,7 +446,7 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
      * @param nextLine the line to parse
      * @return the vulnerability
      */
-    private Vulnerability createVulnerability(String parentName, Dependency dependency, String gem, String nextLine) {
+    private Vulnerability createVulnerability(String parentName, Dependency dependency, String gem, String nextLine) throws CpeValidationException {
         Vulnerability vulnerability = null;
         if (null != dependency) {
             final String version = nextLine.substring(VERSION.length());
@@ -454,15 +456,14 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
                     version,
                     Confidence.HIGHEST);
             vulnerability = new Vulnerability(); // don't add to dependency until we have name set later
-            vulnerability.setMatchedCPE(
-                    String.format("cpe:/a:%1$s_project:%1$s:%2$s::~~~ruby~~", gem, version),
-                    null);
-            vulnerability.setCvssV2AccessVector("-");
-            vulnerability.setCvssV2AccessComplexity("-");
-            vulnerability.setCvssV2Authentication("-");
-            vulnerability.setCvssV2AvailabilityImpact("-");
-            vulnerability.setCvssV2ConfidentialityImpact("-");
-            vulnerability.setCvssV2IntegrityImpact("-");
+            CpeBuilder builder = new CpeBuilder();
+            Cpe vs = builder.part(Part.APPLICATION)
+                    .vendor(gem)
+                    .product(String.format("%s_project", gem))
+                    .version(version).build();
+            vulnerability.addVulnerableSoftware((VulnerableSoftware) vs);
+            vulnerability.setMatchedCPE(vs.toCpe23FS());
+            vulnerability.setCvssV2(new CvssV2(-1, "-", "-", "-", "-", "-", "-", "unknown"));
         }
         LOGGER.debug("bundle-audit ({}): {}", parentName, nextLine);
         return vulnerability;

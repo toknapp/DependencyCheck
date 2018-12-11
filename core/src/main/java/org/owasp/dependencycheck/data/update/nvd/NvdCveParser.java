@@ -33,8 +33,9 @@ import org.owasp.dependencycheck.data.nvdcve.CveDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.owasp.dependencycheck.data.nvd.json.CVEItem;
-import org.owasp.dependencycheck.data.nvd.json.ConfigurationNodeExtension;
+import org.owasp.dependencycheck.data.nvd.json.CpeMatchStreamCollector;
 import org.owasp.dependencycheck.data.nvd.json.Description;
+import org.owasp.dependencycheck.data.nvd.json.NodeFlatteningCollector;
 import org.owasp.dependencycheck.data.nvd.json.ProblemtypeDatum;
 import org.owasp.dependencycheck.utils.Settings;
 
@@ -125,10 +126,9 @@ public final class NvdCveParser {
      */
     protected boolean testCveCpeStartWithFilter(final CVEItem cve) {
         //cycle through to see if this is a CPE we care about (use the CPE filters
-         return cve.getConfigurations().getNodes().stream()
-                    .map(node -> new ConfigurationNodeExtension(node))
-                    .map(ConfigurationNodeExtension::streamNodes)
-                    .flatMap(ConfigurationNodeExtension::streamCpeMatches)
-                    .anyMatch(cpe -> cpe.getCpe23Uri().startsWith(cpeStartsWithFilter));
+        return cve.getConfigurations().getNodes().stream()
+                .collect(new NodeFlatteningCollector())
+                .collect(new CpeMatchStreamCollector())
+                .anyMatch(cpe -> cpe.getCpe23Uri().startsWith(cpeStartsWithFilter));
     }
 }

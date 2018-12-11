@@ -20,6 +20,7 @@ package org.owasp.dependencycheck.dependency;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.owasp.dependencycheck.data.cwe.CweDB;
 
 /**
@@ -54,4 +55,12 @@ public class CweSet {
         return cwes.stream().map(cwe -> CweDB.getName(cwe)).collect(Collectors.joining(" "));
     }
 
+    /**
+     * Streams the CWEs.
+     *
+     * @return the stream of CWE
+     */
+    public Stream<String> stream() {
+        return cwes.stream();
+    }
 }

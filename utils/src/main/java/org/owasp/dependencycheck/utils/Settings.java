@@ -140,20 +140,6 @@ public final class Settings {
          */
         public static final String CVE_CPE_STARTS_WITH_FILTER = "cve.cpe.startswith.filter";
         /**
-         * The properties key for the URL to retrieve the "meta" data from about
-         * the CVE entries.
-         *
-         * @deprecated this is not currently used
-         */
-        @Deprecated
-        public static final String CVE_META_URL = "cve.url.meta";
-        /**
-         * The properties key for the URL to retrieve the recently modified and
-         * added CVE entries (last 8 days) using the 2.0 schema.
-         */
-        @Deprecated
-        public static final String CVE_MODIFIED_20_URL = "cve.url-2.0.modified";
-        /**
          * The properties key for the URL to retrieve the recently modified and
          * added CVE entries (last 8 days) using the 2.0 schema.
          */
@@ -169,19 +155,6 @@ public final class Settings {
          * added CVE entries (last 8 days) using the 2.0 schema.
          */
         public static final String CVE_BASE_JSON = "cve.url.base";
-
-        /**
-         * The properties key for the URL to retrieve the recently modified and
-         * added CVE entries (last 8 days) using the 2.0 schema.
-         */
-        @Deprecated
-        public static final String CVE_ORIGINAL_MODIFIED_20_URL = "cve.url-2.0.original";
-        /**
-         * The properties key for the URL to retrieve the recently modified and
-         * added CVE entries (last 8 days) using the 1.2 schema.
-         */
-        @Deprecated
-        public static final String CVE_MODIFIED_12_URL = "cve.url-1.2.modified";
         /**
          * The properties key for the URL to retrieve the recently modified and
          * added CVE entries (last 8 days).
@@ -199,16 +172,6 @@ public final class Settings {
          */
         public static final String CVE_START_YEAR = "cve.startyear";
         /**
-         * The properties key for the CVE schema version 1.2.
-         */
-        @Deprecated
-        public static final String CVE_SCHEMA_1_2 = "cve.url-1.2.base";
-        /**
-         * The properties key for the CVE schema version 2.0.
-         */
-        @Deprecated
-        public static final String CVE_SCHEMA_2_0 = "cve.url-2.0.base";
-        /**
          * The properties key that indicates how often the CPE data needs to be
          * updated.
          */
@@ -223,15 +186,6 @@ public final class Settings {
          * string.
          */
         public static final String PROXY_DISABLE_SCHEMAS = "proxy.disableSchemas";
-        /**
-         * The properties key for the proxy server.
-         *
-         * @deprecated use
-         * {@link org.owasp.dependencycheck.utils.Settings.KEYS#PROXY_SERVER}
-         * instead.
-         */
-        @Deprecated
-        public static final String PROXY_URL = "proxy.server";
         /**
          * The properties key for the proxy server.
          */
@@ -320,7 +274,6 @@ public final class Settings {
          * out non-vulnerable dependencies.
          */
         public static final String ANALYZER_RETIREJS_FILTER_NON_VULNERABLE = "analyzer.retirejs.filternonvulnerable";
-
         /**
          * The properties key for defining the URL to the RetireJS repository.
          */

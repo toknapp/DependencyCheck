@@ -429,9 +429,9 @@ public final class ConnectionFactory {
                 if (db == null) {
                     throw new DatabaseException("Invalid database schema");
                 }
+                LOGGER.debug("DC Schema: {}", appDbVersion.toString());
+                LOGGER.debug("DB Schema: {}", db.toString());
                 if (appDbVersion.compareTo(db) > 0) {
-                    LOGGER.debug("Current Schema: {}", dbSchemaVersion);
-                    LOGGER.debug("DB Schema: {}", rs.getString(1));
                     updateSchema(conn, appDbVersion, db);
                     if (++callDepth < 10) {
                         ensureSchemaVersion(conn);

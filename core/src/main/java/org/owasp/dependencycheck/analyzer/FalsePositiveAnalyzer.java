@@ -41,6 +41,8 @@ import org.owasp.dependencycheck.utils.FileFilterBuilder;
 import org.owasp.dependencycheck.utils.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import us.springett.parsers.cpe.CpeParser;
+import us.springett.parsers.cpe.exceptions.CpeParsingException;
 
 /**
  * This analyzer attempts to remove some well known false positives -
@@ -275,12 +277,12 @@ public class FalsePositiveAnalyzer extends AbstractAnalyzer {
         if (!"cpe".equals(type)) {
             return null;
         }
-        final VulnerableSoftware cpe = new VulnerableSoftware();
+        final VulnerableSoftware cpe;
         try {
-            cpe.parseName(value);
-        } catch (UnsupportedEncodingException ex) {
-            LOGGER.trace("", ex);
-            return null;
+            cpe = (VulnerableSoftware) CpeParser.parse(value);
+            
+        } catch (CpeParsingException ex) {
+            throw new RuntimeException(ex);
         }
         return cpe;
     }

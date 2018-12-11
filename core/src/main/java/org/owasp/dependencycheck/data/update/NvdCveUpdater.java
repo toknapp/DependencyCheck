@@ -437,19 +437,19 @@ public class NvdCveUpdater implements CachedWebDataSource {
             throws MalformedURLException, DownloadFailedException {
 
         final Set<String> urls = new HashSet<>();
-        final String baseUrl20 = settings.getString(Settings.KEYS.CVE_SCHEMA_2_0);
+        final String baseUrl = settings.getString(Settings.KEYS.CVE_BASE_JSON);
         for (int i = startYear; i <= endYear; i++) {
-            final String url = String.format(baseUrl20, i);
+            final String url = String.format(baseUrl, i);
             urls.add(url);
         }
-        urls.add(settings.getString(Settings.KEYS.CVE_MODIFIED_20_URL));
+        urls.add(settings.getString(Settings.KEYS.CVE_MODIFIED_JSON));
 
         final Map<String, Future<Long>> timestampFutures = new HashMap<>();
-        for (String url : urls) {
+        urls.forEach((url) -> {
             final TimestampRetriever timestampRetriever = new TimestampRetriever(url, settings);
             final Future<Long> future = downloadExecutorService.submit(timestampRetriever);
             timestampFutures.put(url, future);
-        }
+        });
 
         final Map<String, Long> lastModifiedDates = new HashMap<>();
         for (String url : urls) {

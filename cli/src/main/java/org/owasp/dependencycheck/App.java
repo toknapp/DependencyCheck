@@ -161,10 +161,10 @@ public class App {
             try {
                 runUpdateOnly();
             } catch (UpdateException ex) {
-                LOGGER.error(ex.getMessage());
+                LOGGER.error(ex.getMessage(), ex);
                 exitCode = -8;
             } catch (DatabaseException ex) {
-                LOGGER.error(ex.getMessage());
+                LOGGER.error(ex.getMessage(), ex);
                 exitCode = -9;
             } finally {
                 settings.cleanup();
@@ -292,7 +292,7 @@ public class App {
             if (!dep.getVulnerabilities().isEmpty()) {
                 for (Vulnerability vuln : dep.getVulnerabilities()) {
                     LOGGER.debug("VULNERABILITY FOUND {}", dep.getDisplayFileName());
-                    if (vuln.getCvssV2Score() > cvssFailScore) {
+                    if (vuln.getCvssV2().getScore() > cvssFailScore) {
                         retCode = 1;
                     }
                 }
@@ -407,10 +407,8 @@ public class App {
         final String databasePassword = cli.getDatabasePassword();
         final String additionalZipExtensions = cli.getAdditionalZipExtensions();
         final String pathToMono = cli.getPathToMono();
-        final String cveMod12 = cli.getModifiedCve12Url();
-        final String cveMod20 = cli.getModifiedCve20Url();
-        final String cveBase12 = cli.getBaseCve12Url();
-        final String cveBase20 = cli.getBaseCve20Url();
+        final String cveModified = cli.getModifiedCveUrl();
+        final String cveBase = cli.getBaseCveUrl();
         final Integer cveValidForHours = cli.getCveValidForHours();
         final Boolean autoUpdate = cli.isAutoUpdate();
         final Boolean experimentalEnabled = cli.isExperimentalEnabled();
@@ -504,11 +502,9 @@ public class App {
         settings.setStringIfNotEmpty(Settings.KEYS.DB_PASSWORD, databasePassword);
         settings.setStringIfNotEmpty(Settings.KEYS.ADDITIONAL_ZIP_EXTENSIONS, additionalZipExtensions);
         settings.setStringIfNotEmpty(Settings.KEYS.ANALYZER_ASSEMBLY_MONO_PATH, pathToMono);
-        if (cveBase12 != null && !cveBase12.isEmpty()) {
-            settings.setString(Settings.KEYS.CVE_SCHEMA_1_2, cveBase12);
-            settings.setString(Settings.KEYS.CVE_SCHEMA_2_0, cveBase20);
-            settings.setString(Settings.KEYS.CVE_MODIFIED_12_URL, cveMod12);
-            settings.setString(Settings.KEYS.CVE_MODIFIED_20_URL, cveMod20);
+        if (cveBase != null && !cveBase.isEmpty()) {
+            settings.setString(Settings.KEYS.CVE_BASE_JSON, cveBase);
+            settings.setString(Settings.KEYS.CVE_MODIFIED_JSON, cveModified);
         }
     }
 

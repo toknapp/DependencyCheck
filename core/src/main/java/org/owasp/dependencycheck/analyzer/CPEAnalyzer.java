@@ -61,6 +61,7 @@ import org.owasp.dependencycheck.utils.DependencyVersionUtil;
 import org.owasp.dependencycheck.utils.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import us.springett.parsers.cpe.Cpe;
 
 /**
  * CPEAnalyzer is a utility class that takes a project dependency and attempts
@@ -104,7 +105,8 @@ public class CPEAnalyzer extends AbstractAnalyzer {
     /**
      * The URL to perform a search of the NVD CVE data at NIST.
      */
-    public static final String NVD_SEARCH_URL = "https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=%s";
+    
+    public static final String NVD_SEARCH_URL = "https://nvd.nist.gov/products/cpe/search/results?&orderBy=CPEURI&status=FINAL&namingFormat=2.3&keyword=%s";
     /**
      * The CPE in memory index.
      */
@@ -612,7 +614,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
      */
     protected boolean determineIdentifiers(Dependency dependency, String vendor, String product,
             Confidence currentConfidence) throws UnsupportedEncodingException, AnalysisException {
-        final Set<VulnerableSoftware> cpes = cve.getCPEs(vendor, product);
+        final Set<Cpe> cpes = cve.getCPEs(vendor, product);
         if (cpes.isEmpty()) {
             return false;
         }
@@ -633,8 +635,9 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                 }
 
                 int maxDepth = 0;
-                for (VulnerableSoftware vs : cpes) {
-                    final DependencyVersion dbVer = DependencyVersionUtil.parseVersion(vs.getVersion());
+                //TODO - review and update for new JSON data
+                for (Cpe cpe : cpes) {
+                    final DependencyVersion dbVer = DependencyVersionUtil.parseVersion(cpe.getVersion());
                     if (dbVer != null) {
                         final int count = dbVer.getVersionParts().size();
                         if (count > maxDepth) {
@@ -652,8 +655,8 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                         evBaseVer.setVersionParts(evVer.getVersionParts().subList(0, 3));
                     }
                 }
-
-                for (VulnerableSoftware vs : cpes) {
+                //TODO - review and update for new JSON data
+                for (Cpe vs : cpes) {
                     final DependencyVersion dbVer;
                     if (vs.getUpdate() != null && !vs.getUpdate().isEmpty() && !vs.getUpdate().startsWith("~")) {
                         dbVer = DependencyVersionUtil.parseVersion(vs.getVersion() + '.' + vs.getUpdate());
@@ -662,18 +665,18 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                     }
                     if (dbVer == null) { //special case, no version specified - everything is vulnerable
                         hasBroadMatch = true;
-                        final String url = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.getName(), StandardCharsets.UTF_8.name()));
-                        final IdentifierMatch match = new IdentifierMatch("cpe", vs.getName(), url, IdentifierConfidence.BROAD_MATCH, conf);
+                        final String url = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.toCpe23FS(), StandardCharsets.UTF_8.name()));
+                        final IdentifierMatch match = new IdentifierMatch("cpe", vs.toCpe23FS(), url, IdentifierConfidence.BROAD_MATCH, conf);
                         collected.add(match);
                     } else if (evVer.equals(dbVer)) { //yeah! exact match
-                        final String url = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.getName(), StandardCharsets.UTF_8.name()));
-                        final IdentifierMatch match = new IdentifierMatch("cpe", vs.getName(), url, IdentifierConfidence.EXACT_MATCH, conf);
+                        final String url = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.toCpe23FS(), StandardCharsets.UTF_8.name()));
+                        final IdentifierMatch match = new IdentifierMatch("cpe", vs.toCpe23FS(), url, IdentifierConfidence.EXACT_MATCH, conf);
                         collected.add(match);
                     } else if (evBaseVer != null && evBaseVer.equals(dbVer)
                             && (bestGuessConf == null || bestGuessConf.compareTo(conf) > 0)) {
                         bestGuessConf = conf;
                         bestGuess = dbVer;
-                        bestGuessURL = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.getName(), StandardCharsets.UTF_8.name()));
+                        bestGuessURL = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.toCpe23FS(), StandardCharsets.UTF_8.name()));
 
                         //TODO the following isn't quite right is it? need to think about this guessing game a bit more.
                     } else if (evVer.getVersionParts().size() <= dbVer.getVersionParts().size()

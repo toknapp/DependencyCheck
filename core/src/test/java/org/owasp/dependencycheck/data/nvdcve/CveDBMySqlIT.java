@@ -29,6 +29,7 @@ import org.owasp.dependencycheck.dependency.VulnerableSoftware;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.Before;
+import us.springett.parsers.cpe.Cpe;
 
 /**
  *
@@ -73,7 +74,7 @@ public class CveDBMySqlIT extends BaseTest {
         try {
             String vendor = "apache";
             String product = "struts";
-            Set<VulnerableSoftware> result = instance.getCPEs(vendor, product);
+            Set<Cpe> result = instance.getCPEs(vendor, product);
             assertTrue("Has data been loaded into the MySQL DB? if not consider using the CLI to populate it", result.size() > 5);
         } catch (Exception ex) {
             System.out.println("Unable to access the My SQL database; verify that the db server is running and that the schema has been generated");

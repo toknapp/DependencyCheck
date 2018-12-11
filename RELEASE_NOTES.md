@@ -2,6 +2,15 @@
 
 Please see the [dependency-check google group](https://groups.google.com/forum/#!forum/dependency-check) for the release notes on versions not listed below.
 
+## [Version 5.0.0](https://github.com/jeremylong/DependencyCheck/releases/tag/v5.0.0) (2018-12-21)
+
+### Breaking Changes
+
+- All previously deprecated arguments to the plugins and CLI have been removed.
+- .NET core is now used instead of mono
+- The NVD CVE data import now uses the JSON data feeds instead of the XML data feeds.
+- For build pliugin developers using the core engine the identifiers have been drastically changed.
+
 ## [Version 4.0.2](https://github.com/jeremylong/DependencyCheck/releases/tag/v4.0.2) (2019-01-01)
 
 ### Enhancements

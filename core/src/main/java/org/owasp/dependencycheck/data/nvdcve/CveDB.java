@@ -19,7 +19,6 @@ package org.owasp.dependencycheck.data.nvdcve;
 //CSOFF: AvoidStarImport
 
 import org.apache.commons.collections.map.ReferenceMap;
-import org.owasp.dependencycheck.dependency.Reference;
 import org.owasp.dependencycheck.dependency.Vulnerability;
 import org.owasp.dependencycheck.dependency.VulnerableSoftware;
 import org.owasp.dependencycheck.utils.*;
@@ -42,19 +41,22 @@ import static org.apache.commons.collections.map.AbstractReferenceMap.SOFT;
 import org.owasp.dependencycheck.data.nvd.json.BaseMetricV2;
 import org.owasp.dependencycheck.data.nvd.json.BaseMetricV3;
 import org.owasp.dependencycheck.data.nvd.json.CVEItem;
-import org.owasp.dependencycheck.data.nvd.json.ConfigurationNodeExtension;
 import org.owasp.dependencycheck.data.nvd.json.CpeMatch;
+import org.owasp.dependencycheck.data.nvd.json.CpeMatchStreamCollector;
 import org.owasp.dependencycheck.data.nvd.json.Description;
-import org.owasp.dependencycheck.data.nvd.json.Node;
+import org.owasp.dependencycheck.data.nvd.json.NodeFlatteningCollector;
 import org.owasp.dependencycheck.data.nvd.json.ProblemtypeDatum;
 import org.owasp.dependencycheck.data.nvd.json.ReferenceDatum;
 import static org.owasp.dependencycheck.data.nvdcve.CveDB.PreparedStatementCveDb.*;
-import org.owasp.dependencycheck.data.update.exception.UpdateException;
 import org.owasp.dependencycheck.dependency.CvssV2;
 import org.owasp.dependencycheck.dependency.CvssV3;
+import org.owasp.dependencycheck.dependency.VulnerableSoftwareBuilder;
 import us.springett.parsers.cpe.Cpe;
+import us.springett.parsers.cpe.CpeBuilder;
 import us.springett.parsers.cpe.CpeParser;
-import us.springett.parsers.cpe.CpeParsingException;
+import us.springett.parsers.cpe.exceptions.CpeParsingException;
+import us.springett.parsers.cpe.exceptions.CpeValidationException;
+import us.springett.parsers.cpe.values.Part;
 //CSON: AvoidStarImport
 
 /**
@@ -94,6 +96,7 @@ public final class CveDB implements AutoCloseable {
      */
     private final EnumMap<PreparedStatementCveDb, PreparedStatement> preparedStatements = new EnumMap<>(PreparedStatementCveDb.class);
 
+    private final VulnerableSoftwareBuilder vulnerableSoftwareBuilder = new VulnerableSoftwareBuilder();
     /**
      * Cache for CVE lookups; used to speed up the vulnerability search process.
      */
@@ -180,7 +183,7 @@ public final class CveDB implements AutoCloseable {
         /**
          * Key for SQL Statement.
          */
-        SELECT_CWE,
+        SELECT_VULNERABILITY_CWE,
         /**
          * Key for SQL Statement.
          */
@@ -418,21 +421,30 @@ public final class CveDB implements AutoCloseable {
      * analyzed
      * @return a set of vulnerable software
      */
-    public synchronized Set<VulnerableSoftware> getCPEs(String vendor, String product) {
-        final Set<VulnerableSoftware> cpe = new HashSet<>();
+    public synchronized Set<Cpe> getCPEs(String vendor, String product) {
+        final Set<Cpe> cpe = new HashSet<>();
         ResultSet rs = null;
         try {
             final PreparedStatement ps = getPreparedStatement(SELECT_CPE_ENTRIES);
+            //vendor, product, version, update_version, edition, lang, sw_edition, target_sw, target_hw, other 
             ps.setString(1, vendor);
             ps.setString(2, product);
             rs = ps.executeQuery();
-
+            CpeBuilder builder = new CpeBuilder();
             while (rs.next()) {
-                final VulnerableSoftware vs = new VulnerableSoftware();
-                vs.setCpe(rs.getString(1));
+                final Cpe vs = builder.vendor(rs.getString(1))
+                        .product(rs.getString(2))
+                        .version(rs.getString(3))
+                        .update((rs.getString(4)))
+                        .edition((rs.getString(5)))
+                        .language((rs.getString(6)))
+                        .swEdition((rs.getString(7)))
+                        .targetSw((rs.getString(8)))
+                        .targetHw((rs.getString(9)))
+                        .other((rs.getString(10))).build();
                 cpe.add(vs);
             }
-        } catch (SQLException ex) {
+        } catch (SQLException | CpeValidationException ex) {
             LOGGER.error("An unexpected SQL Exception occurred; please see the verbose log for more details.");
             LOGGER.debug("", ex);
         } finally {
@@ -549,13 +561,15 @@ public final class CveDB implements AutoCloseable {
         } else {
             LOGGER.debug("Cache miss for {}", cpeStr);
         }
-        final VulnerableSoftware cpe = new VulnerableSoftware();
+        Cpe cpe = null;
         try {
-            cpe.parseName(cpeStr);
-        } catch (UnsupportedEncodingException ex) {
-            LOGGER.trace("", ex);
+            cpe = CpeParser.parse(cpeStr);
+        } catch (CpeParsingException ex) {
+            throw new DatabaseException("Invalid CPE provided: " + cpeStr, ex);
         }
         final DependencyVersion detectedVersion = parseDependencyVersion(cpe);
+
+        VulnerableSoftwareBuilder builder = new VulnerableSoftwareBuilder();
         final List<Vulnerability> vulnerabilities = new ArrayList<>();
 
         ResultSet rs = null;
@@ -566,33 +580,43 @@ public final class CveDB implements AutoCloseable {
             rs = ps.executeQuery();
             String currentCVE = "";
 
-            final Map<String, Boolean> vulnSoftware = new HashMap<>();
+            final Set<VulnerableSoftware> vulnSoftware = new HashSet<>();
             while (rs.next()) {
                 final String cveId = rs.getString(1);
                 if (!currentCVE.equals(cveId)) { //check for match and add
-                    final Entry<String, Boolean> matchedCPE = getMatchingSoftware(vulnSoftware, cpe.getVendor(), cpe.getProduct(), detectedVersion);
+                    final VulnerableSoftware matchedCPE = getMatchingSoftware(cpe, vulnSoftware);
                     if (matchedCPE != null) {
                         final Vulnerability v = getVulnerability(currentCVE);
                         if (v != null) {
-                            v.setMatchedCPE(matchedCPE.getKey(), matchedCPE.getValue() ? "Y" : null);
+                            v.setMatchedCPE(matchedCPE.toCpe23FS());
                             vulnerabilities.add(v);
                         }
                     }
                     vulnSoftware.clear();
                     currentCVE = cveId;
                 }
-
-                final String cpeId = rs.getString(2);
-                final String previous = rs.getString(3);
-                final Boolean p = previous != null && !previous.isEmpty();
-                vulnSoftware.put(cpeId, p);
+                // 1 cve, 2 vendor, 3 product, 4 version, 5 update_version, 6 edition, 
+                //7 lang, 8 sw_edition, 9 target_sw, 10 target_hw, 11 other, 12 versionEndExcluding, 
+                //13 versionEndIncluding, 14 versionStartExcluding, 15 versionStartIncluding, 16 vulnerable
+                VulnerableSoftware vs;
+                try {
+                    vs = builder.vendor(rs.getString(2)).product(rs.getString(3)).version(rs.getString(4))
+                            .update(rs.getString(5)).edition(rs.getString(6)).language(rs.getString(7))
+                            .swEdition(rs.getString(8)).targetSw(rs.getString(9)).targetHw(rs.getString(10))
+                            .other(rs.getString(11)).versionEndExcluding(rs.getString(22)).versionEndIncluding(rs.getString(13))
+                            .versionStartExcluding(rs.getString(14)).versionStartIncluding(rs.getString(15))
+                            .vulnerable(rs.getBoolean(16)).build();
+                } catch (CpeValidationException ex) {
+                    throw new DatabaseException("Database contains an invalid Vulnerable Software Entry", ex);
+                }
+                vulnSoftware.add(vs);
             }
             //remember to process the last set of CVE/CPE entries
-            final Entry<String, Boolean> matchedCPE = getMatchingSoftware(vulnSoftware, cpe.getVendor(), cpe.getProduct(), detectedVersion);
+            final VulnerableSoftware matchedCPE = getMatchingSoftware(cpe, vulnSoftware);
             if (matchedCPE != null) {
                 final Vulnerability v = getVulnerability(currentCVE);
                 if (v != null) {
-                    v.setMatchedCPE(matchedCPE.getKey(), matchedCPE.getValue() ? "Y" : null);
+                    v.setMatchedCPE(matchedCPE.toCpe23FS());
                     vulnerabilities.add(v);
                 }
             }
@@ -649,7 +673,7 @@ public final class CveDB implements AutoCloseable {
                             rsV.getFloat(19), rsV.getString(20));
                     vuln.setCvssV3(cvss);
                 }
-                final PreparedStatement psCWE = getPreparedStatement(SELECT_CWE);
+                final PreparedStatement psCWE = getPreparedStatement(SELECT_VULNERABILITY_CWE);
                 psCWE.setInt(1, cveId);
                 rsC = psCWE.executeQuery();
                 while (rsC.next()) {
@@ -664,20 +688,36 @@ public final class CveDB implements AutoCloseable {
                 }
 
                 final PreparedStatement psS = getPreparedStatement(SELECT_SOFTWARE);
+                //1 vendor, 2 product, 3 version, 4 update_version, 5 edition, 6 lang, 
+                //7 sw_edition, 8 target_sw, 9 target_hw, 10 other, 11 versionEndExcluding, 
+                //12 versionEndIncluding, 13 versionStartExcluding, 14 versionStartIncluding, vulnerable
                 psS.setInt(1, cveId);
                 rsS = psS.executeQuery();
                 while (rsS.next()) {
-                    final String cpe = rsS.getString(1);
-                    final String prevVersion = rsS.getString(2);
-                    if (prevVersion == null) {
-                        vuln.addVulnerableSoftware(cpe);
-                    } else {
-                        vuln.addVulnerableSoftware(cpe, prevVersion);
-                    }
+                    vulnerableSoftwareBuilder.part(Part.APPLICATION)
+                            .vendor(rsS.getString(1))
+                            .product(rsS.getString(2))
+                            .version(rsS.getString(3))
+                            .update(rsS.getString(4))
+                            .edition(rsS.getString(5))
+                            .language(rsS.getString(6))
+                            .swEdition(rsS.getString(7))
+                            .targetSw(rsS.getString(8))
+                            .targetHw(rsS.getString(9))
+                            .other(rsS.getString(10))
+                            .versionEndExcluding(rsS.getString(11))
+                            .versionEndIncluding(rsS.getString(12))
+                            .versionStartExcluding(rsS.getString(13))
+                            .versionStartIncluding(rsS.getString(14))
+                            .vulnerable(rsS.getBoolean(15));
+
+                    vuln.addVulnerableSoftware(vulnerableSoftwareBuilder.build());
                 }
             }
         } catch (SQLException ex) {
             throw new DatabaseException("Error retrieving " + cve, ex);
+        } catch (CpeValidationException ex) {
+            throw new DatabaseException("The database contains an invalid Vulnerable Software Entry", ex);
         } finally {
             DBUtils.closeResultSet(rsV);
             DBUtils.closeResultSet(rsC);
@@ -695,7 +735,7 @@ public final class CveDB implements AutoCloseable {
      * database
      * @throws DatabaseException is thrown if the database
      */
-    public void updateVulnerability(CVEItem cve) {
+    public synchronized void updateVulnerability(CVEItem cve) {
         clearCache();
         ResultSet rs = null;
         String cveId = cve.getCve().getCVEDataMeta().getID();
@@ -865,6 +905,10 @@ public final class CveDB implements AutoCloseable {
             int countReferences = 0;
 
             for (ReferenceDatum r : cve.getCve().getReferences().getReferenceData()) {
+                LOGGER.debug("reference name: " + r.getName());
+                LOGGER.debug("reference url: " + r.getUrl());
+                LOGGER.debug("reference ref: " + r.getRefsource());
+
                 insertReference.setInt(1, vulnerabilityId);
                 insertReference.setString(2, r.getName());
                 insertReference.setString(3, r.getUrl());
@@ -894,23 +938,29 @@ public final class CveDB implements AutoCloseable {
             //collect the CpeMatch from a what could be a deeply nested structure.
             //TODO - some nodes *could* have a parent with negate=true... but I have not seen an example yet
             String cpeStartsWithFilter = settings.getString(Settings.KEYS.CVE_CPE_STARTS_WITH_FILTER, "cpe:2.3:a:");
+
+            ArrayList<CpeMatch> l = new ArrayList<>();
             List<CpeMatch> cpeEntries = cve.getConfigurations().getNodes().stream()
-                    .map(node -> new ConfigurationNodeExtension(node))
-                    .map(ConfigurationNodeExtension::streamNodes)
-                    .flatMap(ConfigurationNodeExtension::streamCpeMatches)
-                    .filter(cpe -> cpe.getCpe23Uri().startsWith(cpeStartsWithFilter))
+                    .collect(new NodeFlatteningCollector())
+                    .collect(new CpeMatchStreamCollector())
+                    .filter(predicate -> predicate.getCpe23Uri().startsWith(cpeStartsWithFilter))
                     .collect(Collectors.toList());
 
             for (CpeMatch cpe : cpeEntries) {
-                final Cpe parsedCpe;
-                try {
-                    parsedCpe = CpeParser.parse(cpe.getCpe23Uri());
-                } catch (CpeParsingException ex) {
-                    throw new DatabaseException("Unable to parse CPE: " + cpe.getCpe23Uri(), ex);
-                }
+                Cpe parsedCpe;
+                parsedCpe = parseCpe(cpe, cveId);
                 int cpeProductId = 0;
                 final PreparedStatement selectCpeId = getPreparedStatement(SELECT_CPE_ID);
-                selectCpeId.setString(1, cpe.getCpe23Uri());
+                selectCpeId.setString(1, parsedCpe.getVendor());
+                selectCpeId.setString(2, parsedCpe.getProduct());
+                selectCpeId.setString(3, parsedCpe.getVersion());
+                selectCpeId.setString(4, parsedCpe.getUpdate());
+                selectCpeId.setString(5, parsedCpe.getEdition());
+                selectCpeId.setString(6, parsedCpe.getLanguage());
+                selectCpeId.setString(7, parsedCpe.getSwEdition());
+                selectCpeId.setString(8, parsedCpe.getTargetSw());
+                selectCpeId.setString(9, parsedCpe.getTargetHw());
+                selectCpeId.setString(10, parsedCpe.getOther());
                 try {
                     rs = selectCpeId.executeQuery();
                     if (rs.next()) {
@@ -923,9 +973,16 @@ public final class CveDB implements AutoCloseable {
                 }
                 if (cpeProductId == 0) {
                     final PreparedStatement insertCpe = getPreparedStatement(INSERT_CPE);
-                    insertCpe.setString(1, cpe.getCpe23Uri());
-                    insertCpe.setString(2, parsedCpe.getVendor());
-                    insertCpe.setString(3, parsedCpe.getProduct());
+                    insertCpe.setString(1, parsedCpe.getVendor());
+                    insertCpe.setString(2, parsedCpe.getProduct());
+                    insertCpe.setString(3, parsedCpe.getVersion());
+                    insertCpe.setString(4, parsedCpe.getUpdate());
+                    insertCpe.setString(5, parsedCpe.getEdition());
+                    insertCpe.setString(6, parsedCpe.getLanguage());
+                    insertCpe.setString(7, parsedCpe.getSwEdition());
+                    insertCpe.setString(8, parsedCpe.getTargetSw());
+                    insertCpe.setString(9, parsedCpe.getTargetHw());
+                    insertCpe.setString(10, parsedCpe.getOther());
                     insertCpe.executeUpdate();
                     cpeProductId = DBUtils.getGeneratedKey(insertCpe);
                 }
@@ -967,6 +1024,26 @@ public final class CveDB implements AutoCloseable {
         } finally {
             DBUtils.closeResultSet(rs);
         }
+    }
+
+    protected Cpe parseCpe(CpeMatch cpe, String cveId) throws DatabaseException {
+        Cpe parsedCpe;
+        try {
+            //the replace is a hack as the NVD does not properly escape backslashes in their JSON
+            parsedCpe = CpeParser.parse(cpe.getCpe23Uri().replace("?", "\\?"));
+        } catch (CpeParsingException ex) {
+            LOGGER.debug("NVD (" + cveId + ") contain an invalid 2.3 CPE: " + cpe.getCpe23Uri());
+            if (cpe.getCpe22Uri() != null && !cpe.getCpe22Uri().isEmpty()) {
+                try {
+                    parsedCpe = CpeParser.parse(cpe.getCpe22Uri());
+                } catch (CpeParsingException ex2) {
+                    throw new DatabaseException("Unable to parse CPE: " + cpe.getCpe23Uri(), ex);
+                }
+            } else {
+                throw new DatabaseException("Unable to parse CPE: " + cpe.getCpe23Uri(), ex);
+            }
+        }
+        return parsedCpe;
     }
 
     /**
@@ -1091,74 +1168,76 @@ public final class CveDB implements AutoCloseable {
      * previous version argument indicates that all previous versions are
      * affected.
      *
-     * @param vendor the vendor of the dependency being analyzed
-     * @param product the product name of the dependency being analyzed
-     * @param vulnerableSoftware a map of the vulnerable software with a boolean
-     * indicating if all previous versions are affected
-     * @param identifiedVersion the identified version of the dependency being
-     * analyzed
+     * @param cpe the CPE for the given dependency
+     * @param vulnerableSoftware a set of the vulnerable software
      * @return true if the identified version is affected, otherwise false
      */
-    protected Entry<String, Boolean> getMatchingSoftware(Map<String, Boolean> vulnerableSoftware, String vendor, String product,
-            DependencyVersion identifiedVersion) {
+    protected VulnerableSoftware getMatchingSoftware(Cpe cpe, Set<VulnerableSoftware> vulnerableSoftware) {
 
-        final boolean isVersionTwoADifferentProduct = "apache".equals(vendor) && "struts".equals(product);
+        final boolean isVersionTwoADifferentProduct = "apache".equals(cpe.getVendor()) && "struts".equals(cpe.getProduct());
 
-        final Set<String> majorVersionsAffectingAllPrevious = new HashSet<>();
-        final boolean matchesAnyPrevious = identifiedVersion == null || "-".equals(identifiedVersion.toString());
-        String majorVersionMatch = null;
-        for (Entry<String, Boolean> entry : vulnerableSoftware.entrySet()) {
-            final DependencyVersion v = parseDependencyVersion(entry.getKey());
-            if (v == null || "-".equals(v.toString())) { //all versions
-                return entry;
-            }
-            if (entry.getValue()) {
-                if (matchesAnyPrevious) {
-                    return entry;
-                }
-                if (identifiedVersion != null && identifiedVersion.getVersionParts().get(0).equals(v.getVersionParts().get(0))) {
-                    majorVersionMatch = v.getVersionParts().get(0);
-                }
-                majorVersionsAffectingAllPrevious.add(v.getVersionParts().get(0));
-            }
-        }
-        if (matchesAnyPrevious) {
-            return null;
-        }
-
-        final boolean canSkipVersions = majorVersionMatch != null && majorVersionsAffectingAllPrevious.size() > 1;
-        //yes, we are iterating over this twice. The first time we are skipping versions those that affect all versions
-        //then later we process those that affect all versions. This could be done with sorting...
-        for (Entry<String, Boolean> entry : vulnerableSoftware.entrySet()) {
-            if (!entry.getValue()) {
-                final DependencyVersion v = parseDependencyVersion(entry.getKey());
-                //this can't dereference a null 'majorVersionMatch' as canSkipVersions accounts for this.
-                if (canSkipVersions && majorVersionMatch != null && !majorVersionMatch.equals(v.getVersionParts().get(0))) {
-                    continue;
-                }
-                //this can't dereference a null 'identifiedVersion' because if it was null we would have exited
-                //in the above loop or just after loop (if matchesAnyPrevious return null).
-                if (identifiedVersion != null && identifiedVersion.equals(v)) {
-                    return entry;
-                }
-            }
-        }
-        for (Entry<String, Boolean> entry : vulnerableSoftware.entrySet()) {
-            if (entry.getValue()) {
-                final DependencyVersion v = parseDependencyVersion(entry.getKey());
-                //this can't dereference a null 'majorVersionMatch' as canSkipVersions accounts for this.
-                if (canSkipVersions && majorVersionMatch != null && !majorVersionMatch.equals(v.getVersionParts().get(0))) {
-                    continue;
-                }
-                //this can't dereference a null 'identifiedVersion' because if it was null we would have exited
-                //in the above loop or just after loop (if matchesAnyPrevious return null).
-                if (entry.getValue() && identifiedVersion != null && identifiedVersion.compareTo(v) <= 0
-                        && !(isVersionTwoADifferentProduct && !identifiedVersion.getVersionParts().get(0).equals(v.getVersionParts().get(0)))) {
-                    return entry;
-                }
+        for (VulnerableSoftware vs : vulnerableSoftware) {
+            if (vs.matches(cpe)) {
+                return vs;
             }
         }
         return null;
+
+//        final Set<String> majorVersionsAffectingAllPrevious = new HashSet<>();
+//        final boolean matchesAnyPrevious = identifiedVersion == null || "-".equals(identifiedVersion.toString());
+//        String majorVersionMatch = null;
+//        for (Entry<String, Boolean> entry : vulnerableSoftware.entrySet()) {
+//            final DependencyVersion v = parseDependencyVersion(entry.getKey());
+//            if (v == null || "-".equals(v.toString())) { //all versions
+//                return entry;
+//            }
+//            if (entry.getValue()) {
+//                if (matchesAnyPrevious) {
+//                    return entry;
+//                }
+//                if (identifiedVersion != null && identifiedVersion.getVersionParts().get(0).equals(v.getVersionParts().get(0))) {
+//                    majorVersionMatch = v.getVersionParts().get(0);
+//                }
+//                majorVersionsAffectingAllPrevious.add(v.getVersionParts().get(0));
+//            }
+//        }
+//        if (matchesAnyPrevious) {
+//            return null;
+//        }
+//
+//        final boolean canSkipVersions = majorVersionMatch != null && majorVersionsAffectingAllPrevious.size() > 1;
+//        //yes, we are iterating over this twice. The first time we are skipping versions those that affect all versions
+//        //then later we process those that affect all versions. This could be done with sorting...
+//        for (Entry<String, Boolean> entry : vulnerableSoftware.entrySet()) {
+//            if (!entry.getValue()) {
+//                final DependencyVersion v = parseDependencyVersion(entry.getKey());
+//                //this can't dereference a null 'majorVersionMatch' as canSkipVersions accounts for this.
+//                if (canSkipVersions && majorVersionMatch != null && !majorVersionMatch.equals(v.getVersionParts().get(0))) {
+//                    continue;
+//                }
+//                //this can't dereference a null 'identifiedVersion' because if it was null we would have exited
+//                //in the above loop or just after loop (if matchesAnyPrevious return null).
+//                if (identifiedVersion != null && identifiedVersion.equals(v)) {
+//                    return entry;
+//                }
+//            }
+//        }
+//        for (Entry<String, Boolean> entry : vulnerableSoftware.entrySet()) {
+//            if (entry.getValue()) {
+//                final DependencyVersion v = parseDependencyVersion(entry.getKey());
+//                //this can't dereference a null 'majorVersionMatch' as canSkipVersions accounts for this.
+//                if (canSkipVersions && majorVersionMatch != null && !majorVersionMatch.equals(v.getVersionParts().get(0))) {
+//                    continue;
+//                }
+//                //this can't dereference a null 'identifiedVersion' because if it was null we would have exited
+//                //in the above loop or just after loop (if matchesAnyPrevious return null).
+//                if (entry.getValue() && identifiedVersion != null && identifiedVersion.compareTo(v) <= 0
+//                        && !(isVersionTwoADifferentProduct && !identifiedVersion.getVersionParts().get(0).equals(v.getVersionParts().get(0)))) {
+//                    return entry;
+//                }
+//            }
+//        }
+//        return null;
     }
 
     /**
@@ -1169,25 +1248,24 @@ public final class CveDB implements AutoCloseable {
      * @return a dependency version
      */
     private DependencyVersion parseDependencyVersion(String cpeStr) {
-        final VulnerableSoftware cpe = new VulnerableSoftware();
+        Cpe cpe = null;
         try {
-            cpe.parseName(cpeStr);
-        } catch (UnsupportedEncodingException ex) {
-            //never going to happen.
-            LOGGER.trace("", ex);
+            cpe = CpeParser.parse(cpeStr);
+        } catch (CpeParsingException ex) {
+            LOGGER.debug("Invalid CPE? - `" + cpeStr + "`", ex);
         }
         return parseDependencyVersion(cpe);
     }
 
     /**
      * Takes a CPE and parses out the version number. If no version is
-     * identified then a '-' is returned.
+     * identified then null is returned.
      *
      * @param cpe a cpe object
      * @return a dependency version
      */
-    private DependencyVersion parseDependencyVersion(VulnerableSoftware cpe) {
-        final DependencyVersion cpeVersion;
+    private DependencyVersion parseDependencyVersion(Cpe cpe) {
+        DependencyVersion cpeVersion = null;
         if (cpe.getVersion() != null && !cpe.getVersion().isEmpty()) {
             final String versionText;
             if (cpe.getUpdate() != null && !cpe.getUpdate().isEmpty()) {
@@ -1196,8 +1274,6 @@ public final class CveDB implements AutoCloseable {
                 versionText = cpe.getVersion();
             }
             cpeVersion = DependencyVersionUtil.parseVersion(versionText, true);
-        } else {
-            cpeVersion = new DependencyVersion("-");
         }
         return cpeVersion;
     }

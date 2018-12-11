@@ -25,6 +25,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 import org.owasp.dependencycheck.BaseTest;
+import org.owasp.dependencycheck.dependency.CvssV2;
 import org.owasp.dependencycheck.dependency.Dependency;
 import org.owasp.dependencycheck.dependency.Identifier;
 import org.owasp.dependencycheck.dependency.Vulnerability;
@@ -502,9 +503,9 @@ public class SuppressionRuleTest extends BaseTest {
 
     private Vulnerability createVulnerability() {
         Vulnerability v = new Vulnerability();
-        v.setCwe("CWE-287 Improper Authentication");
+        v.addCwe("CWE-287 Improper Authentication");
         v.setName("CVE-2013-1337");
-        v.setCvssV2Score(7.5f);
+        v.setCvssV2(new CvssV2(7.5f, "Network", "Low", "None", "Partial", "Partial", "Partial", "High"));
         return v;
     }
 }
