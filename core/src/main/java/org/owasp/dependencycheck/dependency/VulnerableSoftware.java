@@ -37,7 +37,7 @@ import us.springett.parsers.cpe.values.Part;
  * @author Jeremy Long
  */
 @ThreadSafe
-public class VulnerableSoftware extends Cpe<VulnerableSoftware> implements Serializable {
+public class VulnerableSoftware extends Cpe implements Serializable {
 
     /**
      * The logger.
@@ -120,15 +120,21 @@ public class VulnerableSoftware extends Cpe<VulnerableSoftware> implements Seria
     }
 
     @Override
-    public int compareTo(VulnerableSoftware o) {
-        return new CompareToBuilder()
-                .appendSuper(super.compareTo((Cpe) o))
-                .append(versionStartIncluding, o.versionStartIncluding)
-                .append(versionStartExcluding, o.versionStartExcluding)
-                .append(versionEndIncluding, o.versionEndIncluding)
-                .append(versionEndExcluding, o.versionEndExcluding)
-                .append(this.vulnerable, o.vulnerable)
-                .build();
+    public int compareTo(Object o) {
+        if (o instanceof VulnerableSoftware) {
+            VulnerableSoftware other = (VulnerableSoftware) o;
+            return new CompareToBuilder()
+                    .appendSuper(super.compareTo(other))
+                    .append(versionStartIncluding, other.versionStartIncluding)
+                    .append(versionStartExcluding, other.versionStartExcluding)
+                    .append(versionEndIncluding, other.versionEndIncluding)
+                    .append(versionEndExcluding, other.versionEndExcluding)
+                    .append(this.vulnerable, other.vulnerable)
+                    .build();
+        } else if (o instanceof Cpe) {
+            return super.compareTo(o);
+        }
+        throw new RuntimeException("Unable to compare " + o.getClass().getCanonicalName());
     }
 
     @Override
