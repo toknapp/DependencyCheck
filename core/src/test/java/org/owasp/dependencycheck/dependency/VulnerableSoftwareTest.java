@@ -56,20 +56,6 @@ public class VulnerableSoftwareTest extends BaseTest {
     }
 
     /**
-     * Test of hashCode method, of class VulnerableSoftware.
-     *
-     * @throws CpeValidationException
-     */
-    @Test
-    public void testHashCode() throws CpeValidationException {
-        VulnerableSoftwareBuilder builder = new VulnerableSoftwareBuilder();
-        VulnerableSoftware instance = builder.part(Part.APPLICATION).vendor("mortbay").product("jetty").version("6.1").build();
-        int expResult = 1849413912;
-        int result = instance.hashCode();
-        assertEquals(expResult, result);
-    }
-
-    /**
      * Test of compareTo method, of class VulnerableSoftware.
      * @throws CpeValidationException
      */

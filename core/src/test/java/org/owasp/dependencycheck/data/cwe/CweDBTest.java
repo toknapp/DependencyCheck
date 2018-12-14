@@ -51,7 +51,7 @@ public class CweDBTest extends BaseTest {
     public void testGetFullName() {
         String cweId = "CWE-16";
         String expResult = "CWE-16 Configuration";
-        String result = CweDB.getName(cweId);
+        String result = CweDB.getFullName(cweId);
         assertEquals(expResult, result);
 
         cweId = "CWE-260000";
