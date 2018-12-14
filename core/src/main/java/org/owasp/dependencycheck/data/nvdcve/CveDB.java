@@ -603,7 +603,7 @@ public final class CveDB implements AutoCloseable {
                     vs = builder.vendor(rs.getString(2)).product(rs.getString(3)).version(rs.getString(4))
                             .update(rs.getString(5)).edition(rs.getString(6)).language(rs.getString(7))
                             .swEdition(rs.getString(8)).targetSw(rs.getString(9)).targetHw(rs.getString(10))
-                            .other(rs.getString(11)).versionEndExcluding(rs.getString(22)).versionEndIncluding(rs.getString(13))
+                            .other(rs.getString(11)).versionEndExcluding(rs.getString(12)).versionEndIncluding(rs.getString(13))
                             .versionStartExcluding(rs.getString(14)).versionStartIncluding(rs.getString(15))
                             .vulnerable(rs.getBoolean(16)).build();
                 } catch (CpeValidationException ex) {
