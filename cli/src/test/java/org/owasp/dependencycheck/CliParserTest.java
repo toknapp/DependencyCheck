@@ -211,7 +211,7 @@ public class CliParserTest extends BaseTest {
     @Test
     public void testParse_scan_unknownFile() throws Exception {
 
-        String[] args = {"-scan", "jar.that.does.not.exist", "-app", "test"};
+        String[] args = {"-scan", "jar.that.does.not.exist", "--project", "test"};
 
         CliParser instance = new CliParser(getSettings());
         try {
@@ -233,7 +233,7 @@ public class CliParserTest extends BaseTest {
     @Test
     public void testParse_scan_withFileExists() throws Exception {
         File path = new File(this.getClass().getClassLoader().getResource("checkSumTest.file").toURI().getPath());
-        String[] args = {"-scan", path.getCanonicalPath(), "-out", "./", "-app", "test"};
+        String[] args = {"-scan", path.getCanonicalPath(), "-out", "./", "--project", "test"};
 
         CliParser instance = new CliParser(getSettings());
         instance.parse(args);
@@ -290,7 +290,7 @@ public class CliParserTest extends BaseTest {
         String[] args = {"-h"};
         instance.parse(args);
         instance.printHelp();
-        args[0] = "-ah";
+        args[0] = "--advancedHelp";
         instance.parse(args);
         instance.printHelp();
         try {
