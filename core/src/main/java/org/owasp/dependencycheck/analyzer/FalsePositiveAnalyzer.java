@@ -41,6 +41,7 @@ import org.owasp.dependencycheck.utils.FileFilterBuilder;
 import org.owasp.dependencycheck.utils.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import us.springett.parsers.cpe.Cpe;
 import us.springett.parsers.cpe.CpeParser;
 import us.springett.parsers.cpe.exceptions.CpeParsingException;
 
@@ -204,14 +205,14 @@ public class FalsePositiveAnalyzer extends AbstractAnalyzer {
         final ListIterator<Identifier> mainItr = ids.listIterator();
         while (mainItr.hasNext()) {
             final Identifier currentId = mainItr.next();
-            final VulnerableSoftware currentCpe = parseCpe(currentId.getType(), currentId.getValue());
+            final Cpe currentCpe = parseCpe(currentId.getType(), currentId.getValue());
             if (currentCpe == null) {
                 continue;
             }
             final ListIterator<Identifier> subItr = ids.listIterator(mainItr.nextIndex());
             while (subItr.hasNext()) {
                 final Identifier nextId = subItr.next();
-                final VulnerableSoftware nextCpe = parseCpe(nextId.getType(), nextId.getValue());
+                final Cpe nextCpe = parseCpe(nextId.getType(), nextId.getValue());
                 if (nextCpe == null) {
                     continue;
                 }
@@ -273,13 +274,13 @@ public class FalsePositiveAnalyzer extends AbstractAnalyzer {
      * @param value the cpe identifier to parse
      * @return an VulnerableSoftware object constructed from the identifier
      */
-    private VulnerableSoftware parseCpe(String type, String value) {
+    private Cpe parseCpe(String type, String value) {
         if (!"cpe".equals(type)) {
             return null;
         }
-        final VulnerableSoftware cpe;
+        final Cpe cpe;
         try {
-            cpe = (VulnerableSoftware) CpeParser.parse(value);
+            cpe = CpeParser.parse(value);
             
         } catch (CpeParsingException ex) {
             throw new RuntimeException(ex);
