@@ -128,7 +128,7 @@ public class App {
                 }
                 final File db;
                 try {
-                    db = new File(settings.getDataDirectory(), settings.getString(Settings.KEYS.DB_FILE_NAME, "dc.h2.db"));
+                    db = new File(settings.getDataDirectory(), settings.getString(Settings.KEYS.DB_FILE_NAME, "dc.mv.db"));
                     if (db.exists()) {
                         if (db.delete()) {
                             LOGGER.info("Database file purged; local copy of the NVD has been removed");
@@ -202,6 +202,7 @@ public class App {
                 for (Throwable e : ex.getExceptions()) {
                     if (e.getMessage() != null) {
                         LOGGER.error(e.getMessage());
+                        LOGGER.debug("unexpected error", e);
                     }
                 }
             } finally {
