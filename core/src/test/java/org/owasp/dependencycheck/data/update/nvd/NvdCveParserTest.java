@@ -35,7 +35,7 @@ public class NvdCveParserTest extends BaseTest {
      */
     @Test
     public void testParse() {
-        File file = BaseTest.getResourceAsFile(this, "nvdcve-1.0-2018.json.gz");
+        File file = BaseTest.getResourceAsFile(this, "nvdcve-1.0-2012.json.gz");
         NvdCveParser instance = new NvdCveParser(getSettings(), null);
         instance.parse(file);
 
