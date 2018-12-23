@@ -688,23 +688,23 @@ Getting Help: <a href="https://groups.google.com/forum/#!forum/dependency-check"
                         #end
                         #end</td>
                         #set($cveImpact=-1)
+                        #set($cveSeverity="&nbsp;")
                         #foreach($vuln in $dependency.getVulnerabilities())
-                            #if ($cveImpact<$vuln.cvssScore)
-                                #set($cveImpact=$vuln.cvssScore)
+                            ## yes - we are mixing v2 and v3...  no consistency in data so doing the best we can
+                            #if ($vuln.cvssV3)
+                                #if ($cveImpact<$vuln.cvssV3.baseScore)
+                                    #set($cveImpact=$vuln.cvssV3.baseScore)
+                                    #set($cveSeverity=$enc.html($vuln.cvssV3.baseSeverity)
+                                #end
+                            #elseif ($vuln.cvssV2)
+                                #if ($cveImpact<$vuln.cvssV2.score)
+                                    #set($cveImpact=$vuln.cvssV2.score)
+                                    #set($cveSeverity=$enc.html($vuln.cvssV2.severity)
+                                #end
                             #end
                         #end
                         #set($sortValue=$cveImpact*10)
-                        <td data-sort-value="$sortValue">
-                        #if ($cveImpact<0)
-                            &nbsp;
-                        #elseif ($cveImpact<4.0)
-                            Low
-                        #elseif ($cveImpact>=7.0)
-                            High
-                        #else
-                            Medium
-                        #end
-                        </td>
+                        <td data-sort-value="$sortValue">$cveSeverity</td>
                         <td>$dependency.getVulnerabilities().size()</td>
                         <td data-sort-value="$cpeSort">$WordUtils.capitalizeFully($cpeIdConf.toString())</td>
                         <td>$dependency.size()</td>
@@ -865,21 +865,19 @@ Getting Help: <a href="https://groups.google.com/forum/#!forum/dependency-check"
                             #elseif($vuln.getSource().name().equals("RETIREJS"))
                                 <p><b>$enc.html($vuln.name)</b> (RetireJS)</p>
                             #end
-                            <p>Severity:
-                            #if ($vuln.cvssScore<4.0)
-                                Low
-                            #elseif ($vuln.cvssScore>=7.0)
-                                High
-                            #else
-                                Medium
+                            <p>
+                            #if($vuln.getCvssV2())
+                            CVSSv2:
+                            <ul><li>$enc.html($vuln.getCvssV2().getSeverity()) ($vuln.getCvssV2().getScore())</li>
+                            <li>$enc.html($vuln.getCvssV2().toString())</li></ul>
                             #end
-                            <br/>CVSS Score: $vuln.cvssScore
-                            #if ($vuln.getSource().name().equals("NVD"))
-                                <!-- todo: temp workaround as NSP uses CVSSv3 and supplies the full vector -->
-                                (AV:$enc.html($vuln.cvssAccessVector.substring(0,1))/AC:$enc.html($vuln.cvssAccessComplexity.substring(0,1))/Au:$enc.html($vuln.cvssAuthentication.substring(0,1))/C:$enc.html($vuln.cvssConfidentialityImpact.substring(0,1))/I:$enc.html($vuln.cvssIntegrityImpact.substring(0,1))/A:$enc.html($vuln.cvssAvailabilityImpact.substring(0,1)))
+                            #if($vuln.getCvssV3())
+                            CVSSv3:
+                            <ul><li>$enc.html($vuln.getCvssV3().getBaseSeverity()) ($vuln.getCvssV3().getBaseScore())</li>
+                            <li>$enc.html($vuln.getCvssV3().toString())</li></ul>
                             #end
                             #if ($vuln.cwe)
-                                <br/>CWE: $vuln.cwe
+                                <br/>CWE: $vuln.cwe.toString()
                             #end
                             #if ($vuln.notes)
                                 <br/>Notes: $enc.html($vuln.notes)
@@ -1044,17 +1042,19 @@ Getting Help: <a href="https://groups.google.com/forum/#!forum/dependency-check"
                                     #elseif($vuln.getSource().name().equals("RETIREJS"))
                                         <p><b>$enc.html($vuln.name)</b> (RetireJS)&nbsp;&nbsp;<span class="suppressedLabel" >suppressed</span></p>
                                     #end
-                                    <p>Severity:
-                                    #if ($vuln.cvssScore<4.0)
-                                        Low
-                                    #elseif ($vuln.cvssScore>=7.0)
-                                        High
-                                    #else
-                                        Medium
+                                    <p>
+                                    #if($vuln.getCvssV2())
+                                    CVSSv2:
+                                    <ul><li>$enc.html($vuln.getCvssV2().getSeverity()) ($vuln.getCvssV2().getScore())</li>
+                                    <li>$enc.html($vuln.getCvssV2().toString())</li></ul>
                                     #end
-                                    <br/>CVSS Score: $vuln.cvssScore
+                                    #if($vuln.getCvssV3())
+                                    CVSSv3:
+                                    <ul><li>$enc.html($vuln.getCvssV3().getBaseSeverity()) ($vuln.getCvssV3().getBaseScore())</li>
+                                    <li>$enc.html($vuln.getCvssV3().toString())</li></ul>
+                                    #end
                                     #if ($vuln.cwe)
-                                        <br/>CWE: $vuln.cwe
+                                        <br/>CWE: $vuln.cwe.toString()
                                     #end
                                     #if ($vuln.notes)
                                         <br/>Notes: $enc.xml($vuln.notes)

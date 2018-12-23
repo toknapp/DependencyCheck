@@ -426,9 +426,9 @@ public class SuppressionRule {
                 }
                 if (!remove) {
                     for (String entry : this.cwe) {
-                        if (v.getCwe() != null) {
+                        if (v.getCwes() != null) {
                             final String toMatch = String.format("CWE-%s", entry);
-                            if (v.getCwe().stream().anyMatch(toTest -> toMatch.regionMatches(0, toTest, 0, toMatch.length()))) {
+                            if (v.getCwes().stream().anyMatch(toTest -> toMatch.regionMatches(0, toTest, 0, toMatch.length()))) {
                                 remove = true;
                                 removeVulns.add(v);
                                 break;

@@ -109,6 +109,7 @@ Copyright (c) 2012 Jeremy Long. All Rights Reserved.
                     <includeGetters>true</includeGetters>
                     <annotationStyle>gson</annotationStyle>
                     <targetPackage>org.owasp.dependencycheck.data.nvd.json</targetPackage>
+                    <useCommonsLang3>true</useCommonsLang3>
                 </configuration>
                 <executions>
                     <execution>
@@ -212,6 +213,10 @@ Copyright (c) 2012 Jeremy Long. All Rights Reserved.
             <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
@@ -233,7 +238,7 @@ Copyright (c) 2012 Jeremy Long. All Rights Reserved.
         </dependency>
         <dependency>
             <groupId>org.apache.velocity</groupId>
-            <artifactId>velocity</artifactId>
+            <artifactId>velocity-engine-core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>

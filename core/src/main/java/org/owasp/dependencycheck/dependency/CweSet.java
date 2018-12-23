@@ -37,7 +37,7 @@ public class CweSet {
      *
      * @return the value of CWEs
      */
-    public Set<String> getCwes() {
+    public Set<String> getEntries() {
         return cwes;
     }
 

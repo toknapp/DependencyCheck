@@ -1052,7 +1052,7 @@ public final class Settings {
                         dbFileNameKey);
                 throw new InvalidSettingException(msg);
             }
-            if (connStr.startsWith("jdbc:h2:file:") && fileName.endsWith(".h2.db")) {
+            if (connStr.startsWith("jdbc:h2:file:") && fileName.endsWith(".mv.db")) {
                 fileName = fileName.substring(0, fileName.length() - 6);
             }
             // yes, for H2 this path won't actually exists - but this is sufficient to get the value needed
