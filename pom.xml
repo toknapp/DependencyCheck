@@ -172,7 +172,7 @@ Copyright (c) 2012 - Jeremy Long
         <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>
         <maven-reporting-api.version>3.0</maven-reporting-api.version>
         <commons-collections.version>3.2.2</commons-collections.version>
-        <org.apache.velocity.version>1.7</org.apache.velocity.version>
+        <org.apache.velocity.version>2.0</org.apache.velocity.version>
         <plexus-sec-dispatcher.version>1.4</plexus-sec-dispatcher.version>
 
         <!-- upgrading beyond 2.2 requires reworking the dependency resolution -->
@@ -288,13 +288,13 @@ Copyright (c) 2012 - Jeremy Long
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>3.1.0</version>
-                    <dependencies>
+                    <!--dependencies>
                         <dependency>
                             <groupId>org.owasp.maven-tools</groupId>
                             <artifactId>velocity-whitespace-resource-filter</artifactId>
                             <version>1.0.0</version>
                         </dependency>
-                    </dependencies>
+                    </dependencies-->
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -520,7 +520,7 @@ Copyright (c) 2012 - Jeremy Long
                 <configuration>
                     <signature>
                         <groupId>org.codehaus.mojo.signature</groupId>
-                        <artifactId>java17</artifactId>
+                        <artifactId>java18</artifactId>
                         <version>1.0</version>
                     </signature>
                 </configuration>
@@ -973,7 +973,6 @@ Copyright (c) 2012 - Jeremy Long
                 <artifactId>maven-reporting-api</artifactId>
                 <version>${maven-reporting-api.version}</version>
             </dependency>
-            <!-- Upgrading transitive commons-collections-3.2.1 from velocity-1.7. -->
             <dependency>
                 <groupId>commons-collections</groupId>
                 <artifactId>commons-collections</artifactId>
@@ -981,7 +980,7 @@ Copyright (c) 2012 - Jeremy Long
             </dependency>
             <dependency>
                 <groupId>org.apache.velocity</groupId>
-                <artifactId>velocity</artifactId>
+                <artifactId>velocity-engine-core</artifactId>
                 <version>${org.apache.velocity.version}</version>
             </dependency>
             <dependency>

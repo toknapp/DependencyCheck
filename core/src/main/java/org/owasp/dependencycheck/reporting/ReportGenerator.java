@@ -166,8 +166,6 @@ public class ReportGenerator {
      */
     private VelocityEngine createVelocityEngine() {
         final VelocityEngine velocity = new VelocityEngine();
-        // Logging redirection for Velocity - Required by Jenkins and other server applications
-        velocity.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, VelocityLoggerRedirect.class.getName());
         return velocity;
     }
 

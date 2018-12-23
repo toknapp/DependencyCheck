@@ -24,7 +24,7 @@ import com.h3xstream.retirejs.repo.ScannerFacade;
 import com.h3xstream.retirejs.repo.VulnerabilitiesRepository;
 import com.h3xstream.retirejs.repo.VulnerabilitiesRepositoryLoader;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.owasp.dependencycheck.Engine;
 import org.owasp.dependencycheck.analyzer.exception.AnalysisException;
 import org.owasp.dependencycheck.dependency.Confidence;
