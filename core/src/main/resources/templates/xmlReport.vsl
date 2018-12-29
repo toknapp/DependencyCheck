@@ -153,8 +153,8 @@ Copyright (c) 2018 Jeremy Long. All Rights Reserved.
                 <vulnerability source="$enc.xml($vuln.getSource().name())">
                     <name>$enc.xml($vuln.name)</name>
 #if($vuln.cvssV2)
-                    <cvssv2>
-                        <score>$vuln.cvssV2.score</cvssScore>
+                    <cvssV2>
+                        <score>$vuln.cvssV2.score</score>
                         <accessVector>#if($vuln.cvssV2.accessVector)$enc.xml($vuln.cvssV2.accessVector)#end</accessVector>
                         <accessComplexity>#if($vuln.cvssV2.accessComplexity)$enc.xml($vuln.cvssV2.accessComplexity)#end</accessComplexity>
                         <authenticationr>#if($vuln.cvssV2.authentication)$enc.xml($vuln.cvssV2.authentication)#end</authenticationr>
@@ -162,10 +162,10 @@ Copyright (c) 2018 Jeremy Long. All Rights Reserved.
                         <integrityImpact>#if($vuln.cvssV2.integrityImpact)$enc.xml($vuln.cvssV2.integrityImpact)#end</integrityImpact>
                         <availabilityImpact>#if($vuln.cvssV2.availabilityImpact)$enc.xml($vuln.cvssV2.availabilityImpact)#end</availabilityImpact>
                         <severity>#if($vuln.cvssV2.severity)$enc.xml($vuln.cvssV2.severity)#end</severity>
-                    </cvssv2>
+                    </cvssV2>
 #end
 #if($vuln.cvssV3)
-                    <cvssv3>
+                    <cvssV3>
                         <baseScore>$vuln.cvssV3.baseScore</baseScore>
                         <attackVector>#if($vuln.cvssV3.attackVector)$enc.xml($vuln.cvssV3.attackVector)#end</attackVector>
                         <attackComplexity>#if($vuln.cvssV3.attackComplexity)$enc.xml($vuln.cvssV3.attackComplexity)#end</attackComplexity>
@@ -176,14 +176,14 @@ Copyright (c) 2018 Jeremy Long. All Rights Reserved.
                         <integrityImpact>#if($vuln.cvssV3.integrityImpact)$enc.xml($vuln.cvssV3.integrityImpact)#end</integrityImpact>
                         <availabilityImpact>#if($vuln.cvssV3.availabilityImpact)$enc.xml($vuln.cvssV3.availabilityImpact)#end</availabilityImpact>
                         <baseSeverity>#if($vuln.cvssV3.baseSeverity)$enc.xml($vuln.cvssV3.baseSeverity)#end</baseSeverity>
-                    </cvssv3>
+                    </cvssV3>
 #end
 #if (!$vuln.cwe.cwes.isEmpty())
                     <cwes>
 #foreach($cweEntry in $vuln.cwes.entries)
                     <cwe>$enc.xml($cweEntry)</cwe>
 #end
-                    <cwes>
+                    </cwes>
 #end
                     <description>$enc.xml($vuln.description)</description>
 #if ($vuln.notes)
@@ -209,8 +209,8 @@ Copyright (c) 2018 Jeremy Long. All Rights Reserved.
                 <suppressedVulnerability source="$enc.xml($vuln.getSource().name())">
                     <name>$enc.xml($vuln.name)</name>
 #if($vuln.cvssV2)
-                    <cvssv2>
-                        <score>$vuln.cvssV2.score</cvssScore>
+                    <cvssV2>
+                        <score>$vuln.cvssV2.score</score>
                         <accessVector>#if($vuln.cvssV2.accessVector)$enc.xml($vuln.cvssV2.accessVector)#end</accessVector>
                         <accessComplexity>#if($vuln.cvssV2.accessComplexity)$enc.xml($vuln.cvssV2.accessComplexity)#end</accessComplexity>
                         <authenticationr>#if($vuln.cvssV2.authentication)$enc.xml($vuln.cvssV2.authentication)#end</authenticationr>
@@ -218,10 +218,10 @@ Copyright (c) 2018 Jeremy Long. All Rights Reserved.
                         <integrityImpact>#if($vuln.cvssV2.integrityImpact)$enc.xml($vuln.cvssV2.integrityImpact)#end</integrityImpact>
                         <availabilityImpact>#if($vuln.cvssV2.availabilityImpact)$enc.xml($vuln.cvssV2.availabilityImpact)#end</availabilityImpact>
                         <severity>#if($vuln.cvssV2.severity)$enc.xml($vuln.cvssV2.severity)#end</severity>
-                    </cvssv2>
+                    </cvssV2>
 #end
 #if($vuln.cvssV3)
-                    <cvssv3>
+                    <cvssV3>
                         <baseScore>$vuln.cvssV3.baseScore</baseScore>
                         <attackVector>#if($vuln.cvssV3.attackVector)$enc.xml($vuln.cvssV3.attackVector)#end</attackVector>
                         <attackComplexity>#if($vuln.cvssV3.attackComplexity)$enc.xml($vuln.cvssV3.attackComplexity)#end</attackComplexity>
@@ -232,14 +232,14 @@ Copyright (c) 2018 Jeremy Long. All Rights Reserved.
                         <integrityImpact>#if($vuln.cvssV3.integrityImpact)$enc.xml($vuln.cvssV3.integrityImpact)#end</integrityImpact>
                         <availabilityImpact>#if($vuln.cvssV3.availabilityImpact)$enc.xml($vuln.cvssV3.availabilityImpact)#end</availabilityImpact>
                         <baseSeverity>#if($vuln.cvssV3.baseSeverity)$enc.xml($vuln.cvssV3.baseSeverity)#end</baseSeverity>
-                    </cvssv3>
+                    </cvssV3>
 #end
 #if (!$vuln.cwe.cwes.isEmpty())
                     <cwes>
 #foreach($cweEntry in $vuln.cwes.entries)
                     <cwe>$enc.xml($cweEntry)</cwe>
 #end
-                    <cwes>
+                    </cwes>
 #end
                     <description>$enc.xml($vuln.description)</description>
 #if ($vuln.notes)
