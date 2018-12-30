@@ -28,6 +28,7 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -250,11 +251,11 @@ public class DependencyTest extends BaseTest {
      * Test of addAsEvidence method, of class Dependency.
      */
     @Test
-    public void testAddAsEvidenceWithEmptyArtefact() {
+    public void testAddAsEvidenceWithEmptyArtifact() {
         Dependency instance = new Dependency();
         MavenArtifact mavenArtifact = new MavenArtifact(null, null, null, null);
         instance.addAsEvidence("pom", mavenArtifact, Confidence.HIGH);
-        assertFalse(instance.getEvidence(EvidenceType.VENDOR).contains(Confidence.HIGH));
+        assertFalse(instance.getEvidence(EvidenceType.VENDOR).stream().anyMatch(e->e.getConfidence()==Confidence.HIGH));
         assertTrue(instance.size() == 0);
         assertTrue(instance.getIdentifiers().isEmpty());
     }
@@ -267,22 +268,22 @@ public class DependencyTest extends BaseTest {
         Dependency instance = new Dependency();
         MavenArtifact mavenArtifact = new MavenArtifact("group", "artifact", "version", null);
         instance.addAsEvidence("pom", mavenArtifact, Confidence.HIGH);
-        assertFalse(instance.getEvidence(EvidenceType.VENDOR).contains(Confidence.HIGH));
+        assertTrue(instance.getEvidence(EvidenceType.VENDOR).stream().anyMatch(e->e.getConfidence()==Confidence.HIGH));
         assertTrue(instance.size() == 3);
         assertFalse(instance.getIdentifiers().isEmpty());
 
-        for (Identifier i : instance.getIdentifiers()) {
-            assertTrue(i.getUrl() == null);
-        }
+        instance.getIdentifiers().forEach((i) -> {
+            assertNull(i.getUrl());
+        });
 
         mavenArtifact = new MavenArtifact("group", "artifact", "version", "url");
         instance.addAsEvidence("pom", mavenArtifact, Confidence.HIGH);
-        assertFalse(instance.getEvidence(EvidenceType.VENDOR).contains(Confidence.HIGH));
+        assertTrue(instance.getEvidence(EvidenceType.VENDOR).stream().anyMatch(e->e.getConfidence()==Confidence.HIGH));
         assertTrue(instance.size() == 3);
         assertFalse(instance.getIdentifiers().isEmpty());
 
-        for (Identifier i : instance.getIdentifiers()) {
+        instance.getIdentifiers().forEach((i) -> {
             assertNotNull(i.getUrl());
-        }
+        });
     }
 }
