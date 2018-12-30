@@ -627,9 +627,9 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
      * @return true if the groupId, artifactId, and version match
      */
     private static boolean artifactsMatch(org.apache.maven.model.Dependency d, Artifact a) {
-        return (isEqualOrNull(a.getArtifactId(), d.getArtifactId()))
-                && (isEqualOrNull(a.getGroupId(), d.getGroupId()))
-                && (isEqualOrNull(a.getVersion(), d.getVersion()));
+        return isEqualOrNull(a.getArtifactId(), d.getArtifactId())
+                && isEqualOrNull(a.getGroupId(), d.getGroupId())
+                && isEqualOrNull(a.getVersion(), d.getVersion());
     }
 
     /**
