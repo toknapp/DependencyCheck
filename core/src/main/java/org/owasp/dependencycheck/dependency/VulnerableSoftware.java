@@ -27,6 +27,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import us.springett.parsers.cpe.Cpe;
+import us.springett.parsers.cpe.ICpe;
 import us.springett.parsers.cpe.exceptions.CpeValidationException;
 import us.springett.parsers.cpe.values.Part;
 
@@ -186,7 +187,8 @@ public class VulnerableSoftware extends Cpe implements Serializable {
      * @return <code>true</code> if the CPE matches the target; otherwise
      * <code>false</code>
      */
-    public boolean matches(VulnerableSoftware target) {
+    @Override
+    public boolean matches(ICpe target) {
         boolean result = true;
         result &= compareAttributes(this.getPart(), target.getPart());
         result &= compareAttributes(this.getVendor(), target.getVendor());
@@ -194,8 +196,8 @@ public class VulnerableSoftware extends Cpe implements Serializable {
 
         //TODO implement versionStart etc.
         result &= compareAttributes(this.getVersion(), target.getVersion());
-
         result &= compareAttributes(this.getUpdate(), target.getUpdate());
+        
         result &= compareAttributes(this.getEdition(), target.getEdition());
         result &= compareAttributes(this.getLanguage(), target.getLanguage());
         result &= compareAttributes(this.getSwEdition(), target.getSwEdition());
@@ -220,7 +222,8 @@ public class VulnerableSoftware extends Cpe implements Serializable {
      * @return <code>true</code> if the target CPE matches CPE; otherwise
      * <code>false</code>
      */
-    public boolean matchedBy(VulnerableSoftware target) {
+    @Override
+    public boolean matchedBy(ICpe target) {
         return target.matches(this);
     }
 }
