@@ -159,7 +159,6 @@ public class CvssV2 {
                 accessVector == null ? "" : accessVector.substring(0, 1),
                 accessComplexity == null ? "" : accessComplexity.substring(0, 1),
                 authentication == null ? "" : authentication.substring(0, 1),
-                accessVector == null ? "" : accessVector.substring(0, 1),
                 confidentialityImpact == null ? "" : confidentialityImpact.substring(0, 1),
                 integrityImpact == null ? "" : integrityImpact.substring(0, 1),
                 availabilityImpact == null ? "" : availabilityImpact.substring(0, 1));
