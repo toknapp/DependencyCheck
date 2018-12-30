@@ -563,7 +563,7 @@ public final class CveDB implements AutoCloseable {
         }
         Cpe cpe = null;
         try {
-            cpe = CpeParser.parse(cpeStr);
+            cpe = CpeParser.parse(cpeStr, true);
         } catch (CpeParsingException ex) {
             throw new DatabaseException("Invalid CPE provided: " + cpeStr, ex);
         }
@@ -1030,12 +1030,12 @@ public final class CveDB implements AutoCloseable {
         Cpe parsedCpe;
         try {
             //the replace is a hack as the NVD does not properly escape backslashes in their JSON
-            parsedCpe = CpeParser.parse(cpe.getCpe23Uri().replace("?", "\\?"));
+            parsedCpe = CpeParser.parse(cpe.getCpe23Uri(), true);
         } catch (CpeParsingException ex) {
             LOGGER.debug("NVD (" + cveId + ") contain an invalid 2.3 CPE: " + cpe.getCpe23Uri());
             if (cpe.getCpe22Uri() != null && !cpe.getCpe22Uri().isEmpty()) {
                 try {
-                    parsedCpe = CpeParser.parse(cpe.getCpe22Uri());
+                    parsedCpe = CpeParser.parse(cpe.getCpe22Uri(), true);
                 } catch (CpeParsingException ex2) {
                     throw new DatabaseException("Unable to parse CPE: " + cpe.getCpe23Uri(), ex);
                 }
@@ -1250,7 +1250,7 @@ public final class CveDB implements AutoCloseable {
     private DependencyVersion parseDependencyVersion(String cpeStr) {
         Cpe cpe = null;
         try {
-            cpe = CpeParser.parse(cpeStr);
+            cpe = CpeParser.parse(cpeStr, true);
         } catch (CpeParsingException ex) {
             LOGGER.debug("Invalid CPE? - `" + cpeStr + "`", ex);
         }
@@ -1266,15 +1266,14 @@ public final class CveDB implements AutoCloseable {
      */
     private DependencyVersion parseDependencyVersion(Cpe cpe) {
         DependencyVersion cpeVersion = null;
-        if (cpe.getVersion() != null && !cpe.getVersion().isEmpty()) {
-            final String versionText;
-            if (cpe.getUpdate() != null && !cpe.getUpdate().isEmpty()) {
-                versionText = String.format("%s.%s", cpe.getVersion(), cpe.getUpdate());
-            } else {
-                versionText = cpe.getVersion();
-            }
-            cpeVersion = DependencyVersionUtil.parseVersion(versionText, true);
+
+        final String versionText;
+        if (!"*".equals(cpe.getUpdate())) {
+            versionText = String.format("%s.%s", cpe.getVersion(), cpe.getUpdate());
+        } else {
+            versionText = cpe.getVersion();
         }
+        cpeVersion = DependencyVersionUtil.parseVersion(versionText, true);
         return cpeVersion;
     }
 
