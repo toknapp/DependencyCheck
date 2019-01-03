@@ -43,6 +43,7 @@ import org.owasp.dependencycheck.dependency.EvidenceType;
 import org.owasp.dependencycheck.dependency.Reference;
 import org.owasp.dependencycheck.dependency.Vulnerability;
 import org.owasp.dependencycheck.dependency.VulnerableSoftware;
+import org.owasp.dependencycheck.dependency.VulnerableSoftwareBuilder;
 import org.owasp.dependencycheck.exception.InitializationException;
 import org.owasp.dependencycheck.utils.FileFilterBuilder;
 import org.owasp.dependencycheck.utils.Settings;
@@ -423,16 +424,23 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
                     LOGGER.debug("Unable to look up vulnerability {}", vulnerability.getName());
                 }
             }
-            if (v != null) {
-                vulnerability.setCvssV2(v.getCvssV2());
-            } else if ("High".equalsIgnoreCase(criticality)) {
-                score = 8.5f;
-            } else if ("Medium".equalsIgnoreCase(criticality)) {
-                score = 5.5f;
-            } else if ("Low".equalsIgnoreCase(criticality)) {
-                score = 2.0f;
+            if (v != null && (v.getCvssV2()!=null || v.getCvssV3()!=null)) {
+                if (v.getCvssV2()!=null) {
+                    vulnerability.setCvssV2(v.getCvssV2());
+                }
+                if (v.getCvssV3()!=null) {
+                    vulnerability.setCvssV3(v.getCvssV3());
+                }
+            } else {
+                if ("High".equalsIgnoreCase(criticality)) {
+                    score = 8.5f;
+                } else if ("Medium".equalsIgnoreCase(criticality)) {
+                    score = 5.5f;
+                } else if ("Low".equalsIgnoreCase(criticality)) {
+                    score = 2.0f;
+                }
+                vulnerability.setCvssV2(new CvssV2(score, "-", "-", "-", "-", "-", "-", criticality));
             }
-            vulnerability.setCvssV2(new CvssV2(score, "-", "-", "-", "-", "-", "-", criticality));
         }
         LOGGER.debug("bundle-audit ({}): {}", parentName, nextLine);
     }
@@ -456,12 +464,12 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
                     version,
                     Confidence.HIGHEST);
             vulnerability = new Vulnerability(); // don't add to dependency until we have name set later
-            CpeBuilder builder = new CpeBuilder();
-            Cpe vs = builder.part(Part.APPLICATION)
+            VulnerableSoftwareBuilder builder = new VulnerableSoftwareBuilder();
+            VulnerableSoftware vs = builder.part(Part.APPLICATION)
                     .vendor(gem)
                     .product(String.format("%s_project", gem))
                     .version(version).build();
-            vulnerability.addVulnerableSoftware((VulnerableSoftware) vs);
+            vulnerability.addVulnerableSoftware(vs);
             vulnerability.setMatchedCPE(vs.toCpe23FS());
             vulnerability.setCvssV2(new CvssV2(-1, "-", "-", "-", "-", "-", "-", "unknown"));
         }

@@ -107,12 +107,12 @@ public class CveDBIT extends BaseDBTestCase {
 
         results = instance.getVulnerabilities(cpeStr);
         assertTrue(results.size() > 5);
-        cpeStr = "cpe:/a:jruby:jruby:1.6.3";
+        cpeStr = "cpe:/a:apache:tomcat:6.0.1";
         results = instance.getVulnerabilities(cpeStr);
         assertTrue(results.size() > 1);
 
         boolean found = false;
-        String expected = "CVE-2011-4838";
+        String expected = "CVE-2014-0075";
         for (Vulnerability v : results) {
             if (expected.equals(v.getName())) {
                 found = true;
@@ -122,7 +122,7 @@ public class CveDBIT extends BaseDBTestCase {
         assertTrue("Expected " + expected + ", but was not identified", found);
 
         found = false;
-        expected = "CVE-2012-5370";
+        expected = "CVE-2014-0096";
         for (Vulnerability v : results) {
             if (expected.equals(v.getName())) {
                 found = true;

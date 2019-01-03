@@ -281,7 +281,6 @@ public class FalsePositiveAnalyzer extends AbstractAnalyzer {
         final Cpe cpe;
         try {
             cpe = CpeParser.parse(value, true);
-
         } catch (CpeParsingException ex) {
             throw new RuntimeException(ex);
         }
