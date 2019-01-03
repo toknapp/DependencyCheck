@@ -87,10 +87,6 @@ public class ReportGenerator {
          */
         HTML,
         /**
-         * Generate HTML Vulnerability report.
-         */
-        VULN,
-        /**
          * Generate JSON report.
          */
         JSON,
@@ -282,9 +278,6 @@ public class ReportGenerator {
         }
         if (format == Format.HTML && !pathToCheck.endsWith(".html") && !pathToCheck.endsWith(".htm")) {
             return new File(outFile, "dependency-check-report.html");
-        }
-        if (format == Format.VULN && !pathToCheck.endsWith(".html") && !pathToCheck.endsWith(".htm")) {
-            return new File(outFile, "dependency-check-vulnerability.html");
         }
         if (format == Format.JSON && !pathToCheck.endsWith(".json")) {
             return new File(outFile, "dependency-check-report.json");

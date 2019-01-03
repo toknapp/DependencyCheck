@@ -46,7 +46,7 @@ public class HttpResourceConnectionTest extends BaseTest {
             InputStream in = new GZIPInputStream(resource.fetch(url));
             byte[] read = new byte[90];
             in.read(read);
-            String text = new String(read);
+            String text = new String(read, "UTF-8");
             assertTrue(text.charAt(0) == '{');
             assertTrue(text.contains("\"CVE_data_type\""));
             assertTrue(text.contains("\"CVE_data_format\""));

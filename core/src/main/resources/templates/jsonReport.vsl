@@ -151,7 +151,7 @@
                         "integrityImpact": "$enc.json($vuln.cvssV2.integrityImpact)",
                         "availabilityImpact": "$enc.json($vuln.cvssV2.availabilityImpact)",
                         "severity": "$enc.json($vuln.cvssV2.severity)"
-                    }
+                    },
 #end
 #if($vuln.cvssV3)
                     "cvssv3": {
@@ -165,13 +165,13 @@
                         "integrityImpact": "$enc.json($vuln.cvssV3.integrityImpact)",
                         "availabilityImpact": "$enc.json($vuln.cvssV3.availabilityImpact)",
                         "baseSeverity>": "$enc.json($vuln.cvssV3.baseSeverity)"
-                    }
+                    },
 #end
 #if (!$vuln.cwe.cwes.isEmpty())
                     "cwes": [
 #foreach($cweEntry in $vuln.cwes.entries)
                         #if($foreach.count > 1),#end
-                        "cwe": "$enc.json($cweEntry)"
+                        "$enc.json($cweEntry)"
 #end
                     ],
 #end
@@ -210,7 +210,7 @@
                         "integrityImpact": "$enc.json($vuln.cvssV2.integrityImpact)",
                         "availabilityImpact": "$enc.json($vuln.cvssV2.availabilityImpact)",
                         "severity": "$enc.json($vuln.cvssV2.severity)"
-                    }
+                    },
 #end
 #if($vuln.cvssV3)
                     "cvssv3": {
@@ -224,13 +224,13 @@
                         "integrityImpact": "$enc.json($vuln.cvssV3.integrityImpact)",
                         "availabilityImpact": "$enc.json($vuln.cvssV3.availabilityImpact)",
                         "baseSeverity>": "$enc.json($vuln.cvssV3.baseSeverity)"
-                    }
+                    },
 #end
 #if (!$vuln.cwe.cwes.isEmpty())
                     "cwes": [
 #foreach($cweEntry in $vuln.cwes.entries)
                         #if($foreach.count > 1),#end
-                        "cwe": "$enc.json($cweEntry)"
+                        "$enc.json($cweEntry)"
 #end
                     ],
 #end

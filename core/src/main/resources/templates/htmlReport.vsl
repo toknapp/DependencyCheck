@@ -694,12 +694,12 @@ Getting Help: <a href="https://groups.google.com/forum/#!forum/dependency-check"
                             #if ($vuln.cvssV3)
                                 #if ($cveImpact<$vuln.cvssV3.baseScore)
                                     #set($cveImpact=$vuln.cvssV3.baseScore)
-                                    #set($cveSeverity=$enc.html($vuln.cvssV3.baseSeverity)
+                                    #set($cveSeverity=$enc.html($vuln.cvssV3.baseSeverity))
                                 #end
                             #elseif ($vuln.cvssV2)
                                 #if ($cveImpact<$vuln.cvssV2.score)
                                     #set($cveImpact=$vuln.cvssV2.score)
-                                    #set($cveSeverity=$enc.html($vuln.cvssV2.severity)
+                                    #set($cveSeverity=$enc.html($vuln.cvssV2.severity))
                                 #end
                             #end
                         #end
@@ -926,7 +926,7 @@ Getting Help: <a href="https://groups.google.com/forum/#!forum/dependency-check"
 ## BEGIN SUPPRESSED VULNERABILITIES
                 #if ($vulnSuppressedCount>0 || $cpeSuppressedCount>0)
                     #set($cnt=$cnt+1)
-                    <h2 id="header$cnt" class="expandable">Suppressed Vulnerabilities</h3>
+                    <h2 id="header$cnt" class="expandable">Suppressed Vulnerabilities</h2>
                     <div id="content$cnt" class="hidden">
 
                     #foreach($dependency in $dependencies)
