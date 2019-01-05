@@ -17,7 +17,7 @@ CREATE TABLE vulnerability (id int auto_increment PRIMARY KEY, cve VARCHAR(20) U
 CREATE TABLE reference (cveid INT, name VARCHAR(1000), url VARCHAR(1000), source VARCHAR(255),
 	CONSTRAINT fkReference FOREIGN KEY (cveid) REFERENCES vulnerability(id) ON DELETE CASCADE);
 
-CREATE TABLE cpeEntry (id INT auto_increment PRIMARY KEY, vendor VARCHAR(255), product VARCHAR(255),
+CREATE TABLE cpeEntry (id INT auto_increment PRIMARY KEY, part CHAR(1), vendor VARCHAR(255), product VARCHAR(255),
 version VARCHAR(255), update_version VARCHAR(255), edition VARCHAR(255), lang VARCHAR(20), sw_edition VARCHAR(255), 
 target_sw VARCHAR(255), target_hw VARCHAR(255), other VARCHAR(255));
 
@@ -32,9 +32,9 @@ CREATE INDEX idxCwe ON cweEntry(cveid);
 
 CREATE INDEX idxVulnerability ON vulnerability(cve);
 CREATE INDEX idxReference ON reference(cveid);
-CREATE INDEX idxCpe ON cpeEntry(vendor, product, version, update_version, edition, lang, sw_edition, target_sw, target_hw, other);
+CREATE INDEX idxCpe ON cpeEntry(vendor, product);
 CREATE INDEX idxSoftwareCve ON software(cveid);
 CREATE INDEX idxSoftwareCpe ON software(cpeEntryId);
 
 CREATE TABLE properties (id varchar(50) PRIMARY KEY, value varchar(500));
-INSERT INTO properties(id, value) VALUES ('version', '4.0');
+INSERT INTO properties(id, value) VALUES ('version', '4.1');

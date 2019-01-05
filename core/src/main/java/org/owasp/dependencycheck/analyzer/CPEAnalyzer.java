@@ -62,6 +62,9 @@ import org.owasp.dependencycheck.utils.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import us.springett.parsers.cpe.Cpe;
+import us.springett.parsers.cpe.CpeBuilder;
+import us.springett.parsers.cpe.exceptions.CpeValidationException;
+import us.springett.parsers.cpe.values.Part;
 
 /**
  * CPEAnalyzer is a utility class that takes a project dependency and attempts
@@ -103,10 +106,21 @@ public class CPEAnalyzer extends AbstractAnalyzer {
      */
     private static final int STRING_BUILDER_BUFFER = 20;
     /**
-     * The URL to perform a search of the NVD CVE data at NIST.
+     * UTF-8 charset name.
      */
-    
-    public static final String NVD_SEARCH_URL = "https://nvd.nist.gov/products/cpe/search/results?&orderBy=CPEURI&status=FINAL&namingFormat=2.3&keyword=%s";
+    private static final String UTF8 = StandardCharsets.UTF_8.name();
+    /**
+     * The URL to search the NVD CVE data at NIST. This is used by calling:
+     * <pre>String.format(NVD_SEARCH_URL, vendor, product, version);</pre>
+     */
+    public static final String NVD_SEARCH_URL = "https://nvd.nist.gov/vuln/search/results?form_type=Advanced&results_type=overview&search_type=all&cpe_vendor=cpe%%3A%%2F%%3A%1$s&cpe_product=cpe%%3A%%2F%%3A%1$s%%3A%2$s&cpe_version=cpe%%3A%%2F%%3A%1$s%%3A%2$s%%3A%3$s";
+    //public static final String NVD_SEARCH_URL = "https://nvd.nist.gov/vuln/search/results?form_type=Advanced&results_type=overview&search_type=all&cpe_vendor=cpe%3A%2F%3Aapache&cpe_product=cpe%3A%2F%3Aapache%3Astruts&cpe_version=cpe%3A%2F%3Aapache%3Astruts%3A2.1.2";
+    //public static final String NVD_SEARCH_URL = "https://nvd.nist.gov/products/cpe/search/results?&orderBy=CPEURI&status=FINAL&namingFormat=2.3&keyword=%s";
+    /**
+     * The URL to search the NVD CVE data at NIST. This is used by calling:
+     * <pre>String.format(NVD_SEARCH_URL, vendor, product);</pre>
+     */
+    public static final String NVD_SEARCH_BROAD_URL = "https://nvd.nist.gov/vuln/search/results?form_type=Advanced&results_type=overview&search_type=all&cpe_vendor=cpe%%3A%%2F%%3A%1$s&cpe_product=cpe%%3A%%2F%%3A%1$s%%3A%2$s";
     /**
      * The CPE in memory index.
      */
@@ -654,18 +668,21 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                     }
                     if (dbVer == null) { //special case, no version specified - everything is vulnerable
                         hasBroadMatch = true;
-                        final String url = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.toCpe23FS(), StandardCharsets.UTF_8.name()));
+                        final String url = String.format(NVD_SEARCH_BROAD_URL, URLEncoder.encode(vs.getVendor(), UTF8),
+                                URLEncoder.encode(vs.getProduct(), UTF8));
                         final IdentifierMatch match = new IdentifierMatch("cpe", vs.toCpe23FS(), url, IdentifierConfidence.BROAD_MATCH, conf);
                         collected.add(match);
                     } else if (evVer.equals(dbVer)) { //yeah! exact match
-                        final String url = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.toCpe23FS(), StandardCharsets.UTF_8.name()));
+                        final String url = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.getVendor(), UTF8),
+                                URLEncoder.encode(vs.getProduct(), UTF8), URLEncoder.encode(vs.getVersion(), UTF8));
                         final IdentifierMatch match = new IdentifierMatch("cpe", vs.toCpe23FS(), url, IdentifierConfidence.EXACT_MATCH, conf);
                         collected.add(match);
                     } else if (evBaseVer != null && evBaseVer.equals(dbVer)
                             && (bestGuessConf == null || bestGuessConf.compareTo(conf) > 0)) {
                         bestGuessConf = conf;
                         bestGuess = dbVer;
-                        bestGuessURL = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.toCpe23FS(), StandardCharsets.UTF_8.name()));
+                        bestGuessURL = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.getVendor(), UTF8),
+                                URLEncoder.encode(vs.getProduct(), UTF8), URLEncoder.encode(vs.getVersion(), UTF8));
 
                         //TODO the following isn't quite right is it? need to think about this guessing game a bit more.
                     } else if (evVer.getVersionParts().size() <= dbVer.getVersionParts().size()
@@ -685,11 +702,18 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                 }
             }
         }
-        final String cpeName = String.format("cpe:/a:%s:%s:%s", vendor, product, bestGuess.toString());
+        final CpeBuilder cpeBuilder = new CpeBuilder();
+
+        cpeBuilder.part(Part.APPLICATION).vendor(vendor).product(product).version(bestGuess.toString());
+        final Cpe guessCpe;
+        try {
+            guessCpe = cpeBuilder.build();
+        } catch (CpeValidationException ex) {
+            throw new AnalysisException(String.format("Unable to create a CPE for %s:%s:%s", vendor, product, bestGuess.toString()));
+        }
         String url = null;
         if (hasBroadMatch) { //if we have a broad match we can add the URL to the best guess.
-            final String cpeUrlName = String.format("cpe:/a:%s:%s", vendor, product);
-            url = String.format(NVD_SEARCH_URL, URLEncoder.encode(cpeUrlName, StandardCharsets.UTF_8.name()));
+            url = String.format(NVD_SEARCH_BROAD_URL, URLEncoder.encode(vendor, "UTF-8"), URLEncoder.encode(product, "UTF-8"));
         }
         if (bestGuessURL != null) {
             url = bestGuessURL;
@@ -697,7 +721,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
         if (bestGuessConf == null) {
             bestGuessConf = Confidence.LOW;
         }
-        final IdentifierMatch match = new IdentifierMatch("cpe", cpeName, url, IdentifierConfidence.BEST_GUESS, bestGuessConf);
+        final IdentifierMatch match = new IdentifierMatch("cpe", guessCpe.toCpe23FS(), url, IdentifierConfidence.BEST_GUESS, bestGuessConf);
 
         collected.add(match);
 
