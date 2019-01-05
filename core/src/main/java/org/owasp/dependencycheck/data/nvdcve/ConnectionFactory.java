@@ -357,7 +357,7 @@ public final class ConnectionFactory {
         } catch (SQLException ex) {
             throw new DatabaseException("Unable to get the database product name", ex);
         }
-        if ("h2".equalsIgnoreCase(databaseProductName)) {
+        if (connectionString.startsWith("jdbc:h2:file:")) {
             LOGGER.debug("Updating database structure");
             final String updateFile = String.format(DB_STRUCTURE_UPDATE_RESOURCE, currentDbVersion.toString());
             try (InputStream is = FileUtils.getResourceAsStream(updateFile)) {
@@ -369,14 +369,10 @@ public final class ConnectionFactory {
                 Statement statement = null;
                 try {
                     statement = conn.createStatement();
-                    final boolean success = statement.execute(dbStructureUpdate);
-                    if (!success && statement.getUpdateCount() <= 0) {
-                        throw new DatabaseException(String.format("Unable to upgrade the database schema to %s",
-                                currentDbVersion.toString()));
-                    }
+                    statement.execute(dbStructureUpdate);
                 } catch (SQLException ex) {
-                    LOGGER.debug("", ex);
-                    throw new DatabaseException("Unable to update database schema", ex);
+                    throw new DatabaseException(String.format("Unable to upgrade the database schema from %s to %s",
+                                currentDbVersion.toString(), appExpectedVersion.toString()),ex);
                 } finally {
                     DBUtils.closeStatement(statement);
                 }

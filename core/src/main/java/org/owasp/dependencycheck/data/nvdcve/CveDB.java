@@ -426,25 +426,27 @@ public final class CveDB implements AutoCloseable {
         ResultSet rs = null;
         try {
             final PreparedStatement ps = getPreparedStatement(SELECT_CPE_ENTRIES);
-            //vendor, product, version, update_version, edition, lang, sw_edition, target_sw, target_hw, other 
+            //part, vendor, product, version, update_version, edition, lang, sw_edition, target_sw, target_hw, other 
             ps.setString(1, vendor);
             ps.setString(2, product);
             rs = ps.executeQuery();
             CpeBuilder builder = new CpeBuilder();
             while (rs.next()) {
-                final Cpe vs = builder.vendor(rs.getString(1))
-                        .product(rs.getString(2))
-                        .version(rs.getString(3))
-                        .update((rs.getString(4)))
-                        .edition((rs.getString(5)))
-                        .language((rs.getString(6)))
-                        .swEdition((rs.getString(7)))
-                        .targetSw((rs.getString(8)))
-                        .targetHw((rs.getString(9)))
-                        .other((rs.getString(10))).build();
+                final Cpe vs = builder
+                        .part(rs.getString(1))
+                        .vendor(rs.getString(2))
+                        .product(rs.getString(3))
+                        .version(rs.getString(4))
+                        .update((rs.getString(5)))
+                        .edition((rs.getString(6)))
+                        .language((rs.getString(7)))
+                        .swEdition((rs.getString(8)))
+                        .targetSw((rs.getString(9)))
+                        .targetHw((rs.getString(10)))
+                        .other((rs.getString(11))).build();
                 cpe.add(vs);
             }
-        } catch (SQLException | CpeValidationException ex) {
+        } catch (SQLException | CpeParsingException | CpeValidationException ex) {
             LOGGER.error("An unexpected SQL Exception occurred; please see the verbose log for more details.");
             LOGGER.debug("", ex);
         } finally {
@@ -569,7 +571,6 @@ public final class CveDB implements AutoCloseable {
         }
         final DependencyVersion detectedVersion = parseDependencyVersion(cpe);
 
-        VulnerableSoftwareBuilder builder = new VulnerableSoftwareBuilder();
         final List<Vulnerability> vulnerabilities = new ArrayList<>();
 
         ResultSet rs = null;
@@ -595,18 +596,19 @@ public final class CveDB implements AutoCloseable {
                     vulnSoftware.clear();
                     currentCVE = cveId;
                 }
-                // 1 cve, 2 vendor, 3 product, 4 version, 5 update_version, 6 edition, 
-                //7 lang, 8 sw_edition, 9 target_sw, 10 target_hw, 11 other, 12 versionEndExcluding, 
-                //13 versionEndIncluding, 14 versionStartExcluding, 15 versionStartIncluding, 16 vulnerable
+                // 1 cve, 2 part, 3 vendor, 4 product, 5 version, 6 update_version, 7 edition, 
+                // 8 lang, 9 sw_edition, 10 target_sw, 11 target_hw, 12 other, 13 versionEndExcluding, 
+                //14 versionEndIncluding, 15 versionStartExcluding, 16 versionStartIncluding, 17 vulnerable
                 VulnerableSoftware vs;
                 try {
-                    vs = builder.vendor(rs.getString(2)).product(rs.getString(3)).version(rs.getString(4))
-                            .update(rs.getString(5)).edition(rs.getString(6)).language(rs.getString(7))
-                            .swEdition(rs.getString(8)).targetSw(rs.getString(9)).targetHw(rs.getString(10))
-                            .other(rs.getString(11)).versionEndExcluding(rs.getString(12)).versionEndIncluding(rs.getString(13))
-                            .versionStartExcluding(rs.getString(14)).versionStartIncluding(rs.getString(15))
-                            .vulnerable(rs.getBoolean(16)).build();
-                } catch (CpeValidationException ex) {
+                    vs = vulnerableSoftwareBuilder.part(rs.getString(2)).vendor(rs.getString(3))
+                            .product(rs.getString(4)).version(rs.getString(5)).update(rs.getString(6))
+                            .edition(rs.getString(7)).language(rs.getString(8)).swEdition(rs.getString(9))
+                            .targetSw(rs.getString(10)).targetHw(rs.getString(11)).other(rs.getString(12))
+                            .versionEndExcluding(rs.getString(13)).versionEndIncluding(rs.getString(14))
+                            .versionStartExcluding(rs.getString(15)).versionStartIncluding(rs.getString(16))
+                            .vulnerable(rs.getBoolean(17)).build();
+                } catch (CpeParsingException | CpeValidationException ex) {
                     throw new DatabaseException("Database contains an invalid Vulnerable Software Entry", ex);
                 }
                 vulnSoftware.add(vs);
@@ -688,35 +690,34 @@ public final class CveDB implements AutoCloseable {
                 }
 
                 final PreparedStatement psS = getPreparedStatement(SELECT_SOFTWARE);
-                //1 vendor, 2 product, 3 version, 4 update_version, 5 edition, 6 lang, 
-                //7 sw_edition, 8 target_sw, 9 target_hw, 10 other, 11 versionEndExcluding, 
-                //12 versionEndIncluding, 13 versionStartExcluding, 14 versionStartIncluding, vulnerable
+                //1 part, 2 vendor, 3 product, 4 version, 5 update_version, 6 edition, 7 lang, 
+                //8 sw_edition, 9 target_sw, 10 target_hw, 11 other, 12 versionEndExcluding, 
+                //13 versionEndIncluding, 14 versionStartExcluding, 15 versionStartIncluding, 16 vulnerable
                 psS.setInt(1, cveId);
                 rsS = psS.executeQuery();
                 while (rsS.next()) {
-                    vulnerableSoftwareBuilder.part(Part.APPLICATION)
-                            .vendor(rsS.getString(1))
-                            .product(rsS.getString(2))
-                            .version(rsS.getString(3))
-                            .update(rsS.getString(4))
-                            .edition(rsS.getString(5))
-                            .language(rsS.getString(6))
-                            .swEdition(rsS.getString(7))
-                            .targetSw(rsS.getString(8))
-                            .targetHw(rsS.getString(9))
-                            .other(rsS.getString(10))
-                            .versionEndExcluding(rsS.getString(11))
-                            .versionEndIncluding(rsS.getString(12))
-                            .versionStartExcluding(rsS.getString(13))
-                            .versionStartIncluding(rsS.getString(14))
-                            .vulnerable(rsS.getBoolean(15));
-
+                    vulnerableSoftwareBuilder.part(rsS.getString(1))
+                            .vendor(rsS.getString(2))
+                            .product(rsS.getString(3))
+                            .version(rsS.getString(4))
+                            .update(rsS.getString(5))
+                            .edition(rsS.getString(6))
+                            .language(rsS.getString(7))
+                            .swEdition(rsS.getString(8))
+                            .targetSw(rsS.getString(9))
+                            .targetHw(rsS.getString(10))
+                            .other(rsS.getString(11))
+                            .versionEndExcluding(rsS.getString(12))
+                            .versionEndIncluding(rsS.getString(13))
+                            .versionStartExcluding(rsS.getString(14))
+                            .versionStartIncluding(rsS.getString(15))
+                            .vulnerable(rsS.getBoolean(16));
                     vuln.addVulnerableSoftware(vulnerableSoftwareBuilder.build());
                 }
             }
         } catch (SQLException ex) {
             throw new DatabaseException("Error retrieving " + cve, ex);
-        } catch (CpeValidationException ex) {
+        } catch (CpeParsingException | CpeValidationException ex) {
             throw new DatabaseException("The database contains an invalid Vulnerable Software Entry", ex);
         } finally {
             DBUtils.closeResultSet(rsV);
@@ -973,16 +974,17 @@ public final class CveDB implements AutoCloseable {
                 }
                 if (cpeProductId == 0) {
                     final PreparedStatement insertCpe = getPreparedStatement(INSERT_CPE);
-                    insertCpe.setString(1, parsedCpe.getVendor());
-                    insertCpe.setString(2, parsedCpe.getProduct());
-                    insertCpe.setString(3, parsedCpe.getVersion());
-                    insertCpe.setString(4, parsedCpe.getUpdate());
-                    insertCpe.setString(5, parsedCpe.getEdition());
-                    insertCpe.setString(6, parsedCpe.getLanguage());
-                    insertCpe.setString(7, parsedCpe.getSwEdition());
-                    insertCpe.setString(8, parsedCpe.getTargetSw());
-                    insertCpe.setString(9, parsedCpe.getTargetHw());
-                    insertCpe.setString(10, parsedCpe.getOther());
+                    insertCpe.setString(1, parsedCpe.getPart().getAbbreviation());
+                    insertCpe.setString(2, parsedCpe.getVendor());
+                    insertCpe.setString(3, parsedCpe.getProduct());
+                    insertCpe.setString(4, parsedCpe.getVersion());
+                    insertCpe.setString(5, parsedCpe.getUpdate());
+                    insertCpe.setString(6, parsedCpe.getEdition());
+                    insertCpe.setString(7, parsedCpe.getLanguage());
+                    insertCpe.setString(8, parsedCpe.getSwEdition());
+                    insertCpe.setString(9, parsedCpe.getTargetSw());
+                    insertCpe.setString(10, parsedCpe.getTargetHw());
+                    insertCpe.setString(11, parsedCpe.getOther());
                     insertCpe.executeUpdate();
                     cpeProductId = DBUtils.getGeneratedKey(insertCpe);
                 }
