@@ -28,13 +28,15 @@ CREATE TABLE software (cveid INT, cpeEntryId INT, versionEndExcluding VARCHAR(50
 
 CREATE TABLE cweEntry (cveid INT, cwe VARCHAR(20),
     CONSTRAINT fkCweEntry FOREIGN KEY (cveid) REFERENCES vulnerability(id) ON DELETE CASCADE);
-CREATE INDEX idxCwe ON cweEntry(cveid);
 
+CREATE INDEX idxCwe ON cweEntry(cveid);
 CREATE INDEX idxVulnerability ON vulnerability(cve);
 CREATE INDEX idxReference ON reference(cveid);
 CREATE INDEX idxCpe ON cpeEntry(vendor, product);
 CREATE INDEX idxSoftwareCve ON software(cveid);
 CREATE INDEX idxSoftwareCpe ON software(cpeEntryId);
+
+CREATE INDEX idxCpeEntry ON cpeEntry(part, vendor, product, version, update_version, edition, lang, sw_edition, target_sw, target_hw, other);
 
 CREATE TABLE properties (id varchar(50) PRIMARY KEY, value varchar(500));
 INSERT INTO properties(id, value) VALUES ('version', '4.1');
