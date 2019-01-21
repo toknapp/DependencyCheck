@@ -20,12 +20,13 @@ package org.owasp.dependencycheck.agent;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.owasp.dependencycheck.Engine;
 import org.owasp.dependencycheck.data.nvdcve.DatabaseException;
 import org.owasp.dependencycheck.data.update.exception.UpdateException;
 import org.owasp.dependencycheck.dependency.Dependency;
-import org.owasp.dependencycheck.dependency.Identifier;
 import org.owasp.dependencycheck.dependency.Vulnerability;
 import org.owasp.dependencycheck.exception.ExceptionCollection;
 import org.owasp.dependencycheck.exception.ReportException;
@@ -156,7 +157,8 @@ public class DependencyCheckScanAgent {
      */
     private String databasePassword;
     /**
-     * The starting string that identifies CPEs that are qualified to be imported.
+     * The starting string that identifies CPEs that are qualified to be
+     * imported.
      */
     private String cpeStartsWithFilter;
     /**
@@ -557,15 +559,20 @@ public class DependencyCheckScanAgent {
     }
 
     /**
-     * Sets starting string that identifies CPEs that are qualified to be imported.
-     * @param cpeStartsWithFilter filters CPEs based on this starting string (i.e. cpe:/a: )
+     * Sets starting string that identifies CPEs that are qualified to be
+     * imported.
+     *
+     * @param cpeStartsWithFilter filters CPEs based on this starting string
+     * (i.e. cpe:/a: )
      */
     public void setCpeStartsWithFilter(String cpeStartsWithFilter) {
         this.cpeStartsWithFilter = cpeStartsWithFilter;
     }
 
     /**
-     * Returns the starting string that identifies CPEs that are qualified to be imported.
+     * Returns the starting string that identifies CPEs that are qualified to be
+     * imported.
+     *
      * @return the CPE starting filter (i.e. cpe:/a: )
      */
     public String getCpeStartsWithFilter() {
@@ -844,8 +851,9 @@ public class DependencyCheckScanAgent {
     //</editor-fold>
 
     /**
-     * Executes the Dependency-Check on the dependent libraries. <b>Note</b>, the engine
-     * object returned from this method must be closed by calling `close()`
+     * Executes the Dependency-Check on the dependent libraries. <b>Note</b>,
+     * the engine object returned from this method must be closed by calling
+     * `close()`
      *
      * @return the Engine used to scan the dependencies.
      * @throws ExceptionCollection a collection of one or more exceptions that
@@ -1023,37 +1031,42 @@ public class DependencyCheckScanAgent {
      *
      * @param dependencies a list of dependency objects
      */
-    private void showSummary(Dependency[] dependencies) {
+    public static void showSummary(Dependency[] dependencies) {
+        showSummary(null, dependencies);
+    }
+
+    /**
+     * Generates a warning message listing a summary of dependencies and their
+     * associated CPE and CVE entries.
+     *
+     * @param projectName the name of the project
+     * @param dependencies a list of dependency objects
+     */
+    public static void showSummary(String projectName, Dependency[] dependencies) {
         final StringBuilder summary = new StringBuilder();
         for (Dependency d : dependencies) {
-            boolean firstEntry = true;
-            final StringBuilder ids = new StringBuilder();
-            for (Vulnerability v : d.getVulnerabilities(true)) {
-                if (firstEntry) {
-                    firstEntry = false;
-                } else {
-                    ids.append(", ");
-                }
-                ids.append(v.getName());
-            }
+            final String ids = d.getVulnerabilities(true).stream()
+                    .map(v -> v.getName())
+                    .collect(Collectors.joining(", "));
             if (ids.length() > 0) {
                 summary.append(d.getFileName()).append(" (");
-                firstEntry = true;
-                for (Identifier id : d.getIdentifiers()) {
-                    if (firstEntry) {
-                        firstEntry = false;
-                    } else {
-                        summary.append(", ");
-                    }
-                    summary.append(id.getValue());
-                }
+                summary.append(Stream.concat(d.getSoftwareIdentifiers().stream(), d.getVulnerableSoftwareIdentifiers().stream())
+                        .map(i -> i.getValue())
+                        .collect(Collectors.joining(", ")));
                 summary.append(") : ").append(ids).append(NEW_LINE);
             }
         }
         if (summary.length() > 0) {
-            LOGGER.warn("\n\nOne or more dependencies were identified with known vulnerabilities:\n\n{}\n\n"
-                    + "See the dependency-check report for more details.\n\n",
-                    summary.toString());
+            if (projectName == null || projectName.isEmpty()) {
+                LOGGER.warn("\n\nOne or more dependencies were identified with known vulnerabilities:\n\n{}\n\n"
+                        + "See the dependency-check report for more details.\n\n",
+                        summary.toString());
+            } else {
+                LOGGER.warn("\n\nOne or more dependencies were identified with known vulnerabilities in {}:\n\n{}\n\n"
+                        + "See the dependency-check report for more details.\n\n",
+                        projectName,
+                        summary.toString());
+            }
         }
     }
 }

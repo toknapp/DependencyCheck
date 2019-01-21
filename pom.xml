@@ -838,6 +838,11 @@ Copyright (c) 2012 - Jeremy Long
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>com.github.package-url</groupId>
+                <artifactId>packageurl-java</artifactId>
+                <version>1.1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
                 <groupId>us.springett</groupId>
                 <artifactId>cpe-parser</artifactId>
                 <version>2.0.0-SNAPSHOT</version>

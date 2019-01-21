@@ -28,16 +28,28 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import org.owasp.dependencycheck.data.nvdcve.CveDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.owasp.dependencycheck.data.nvd.json.CVEItem;
+import org.owasp.dependencycheck.data.nvd.json.CpeMatch;
 import org.owasp.dependencycheck.data.nvd.json.CpeMatchStreamCollector;
 import org.owasp.dependencycheck.data.nvd.json.Description;
 import org.owasp.dependencycheck.data.nvd.json.NodeFlatteningCollector;
 import org.owasp.dependencycheck.data.nvd.json.ProblemtypeDatum;
+import org.owasp.dependencycheck.data.nvdcve.DatabaseException;
+import org.owasp.dependencycheck.dependency.VulnerableSoftware;
+import org.owasp.dependencycheck.dependency.VulnerableSoftwareBuilder;
 import org.owasp.dependencycheck.utils.Settings;
+import us.springett.parsers.cpe.Cpe;
+import us.springett.parsers.cpe.CpeParser;
+import us.springett.parsers.cpe.exceptions.CpeParsingException;
+import us.springett.parsers.cpe.exceptions.CpeValidationException;
+import us.springett.parsers.cpe.values.Part;
 
 /**
  * Parser and processor of NVD CVE JSON data feeds.
@@ -88,10 +100,12 @@ public final class NvdCveParser {
             while (reader.hasNext()) {
                 final CVEItem cve = gson.fromJson(reader, CVEItem.class);
 
-                cve.getCve().getCVEDataMeta().getSTATE();
+                //cve.getCve().getCVEDataMeta().getSTATE();
 
                 if (testCveCpeStartWithFilter(cve)) {
-                    cveDB.updateVulnerability(cve);
+                    //parse the CPEs outside of the synchronized updateVulnerability
+                    List<VulnerableSoftware> software = parseCpes(cve);
+                    cveDB.updateVulnerability(cve, software);
                 }
 
                 //there can be zero or more CWE - should this be a list?
@@ -114,6 +128,58 @@ public final class NvdCveParser {
             LOGGER.error("Error reading NVD JSON data: {}", file);
             LOGGER.debug("Error extracting the NVD JSON data from: " + file.toString(), ex);
         }
+    }
+
+    private List<VulnerableSoftware> parseCpes(CVEItem cve) {
+        List<VulnerableSoftware> software = new ArrayList<>();
+        List<CpeMatch> cpeEntries = cve.getConfigurations().getNodes().stream()
+                .collect(new NodeFlatteningCollector())
+                .collect(new CpeMatchStreamCollector())
+                .filter(predicate -> predicate.getCpe23Uri().startsWith(cpeStartsWithFilter))
+                .collect(Collectors.toList());
+        VulnerableSoftwareBuilder builder = new VulnerableSoftwareBuilder();
+
+        for (CpeMatch item : cpeEntries) {
+            Cpe cpe = parseCpe(item, cve.getCve().getCVEDataMeta().getID());
+
+            builder.part(cpe.getPart()).wfVendor(cpe.getWellFormedVendor()).wfProduct(cpe.getProduct())
+                    .wfVersion(cpe.getWellFormedVersion()).wfUpdate(cpe.getWellFormedUpdate())
+                    .wfEdition(cpe.getWellFormedEdition()).wfLanguage(cpe.getWellFormedLanguage())
+                    .wfSwEdition(cpe.getWellFormedSwEdition()).wfTargetSw(cpe.getWellFormedTargetSw())
+                    .wfTargetHw(cpe.getWellFormedTargetHw()).wfOther(cpe.getWellFormedOther())
+                    .versionEndExcluding(item.getVersionEndExcluding())
+                    .versionStartExcluding(item.getVersionStartExcluding())
+                    .versionEndIncluding(item.getVersionEndIncluding())
+                    .versionStartIncluding(item.getVersionStartIncluding())
+                    .vulnerable(item.getVulnerable());
+            try {
+                software.add(builder.build());
+            } catch (CpeValidationException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+
+        return software;
+    }
+
+    private Cpe parseCpe(CpeMatch cpe, String cveId) throws DatabaseException {
+        Cpe parsedCpe;
+        try {
+            //the replace is a hack as the NVD does not properly escape backslashes in their JSON
+            parsedCpe = CpeParser.parse(cpe.getCpe23Uri(), true);
+        } catch (CpeParsingException ex) {
+            LOGGER.debug("NVD (" + cveId + ") contain an invalid 2.3 CPE: " + cpe.getCpe23Uri());
+            if (cpe.getCpe22Uri() != null && !cpe.getCpe22Uri().isEmpty()) {
+                try {
+                    parsedCpe = CpeParser.parse(cpe.getCpe22Uri(), true);
+                } catch (CpeParsingException ex2) {
+                    throw new DatabaseException("Unable to parse CPE: " + cpe.getCpe23Uri(), ex);
+                }
+            } else {
+                throw new DatabaseException("Unable to parse CPE: " + cpe.getCpe23Uri(), ex);
+            }
+        }
+        return parsedCpe;
     }
 
     /**

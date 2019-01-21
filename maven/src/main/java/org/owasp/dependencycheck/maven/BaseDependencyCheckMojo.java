@@ -17,6 +17,9 @@
  */
 package org.owasp.dependencycheck.maven;
 
+import com.github.packageurl.MalformedPackageURLException;
+import com.github.packageurl.PackageURL;
+import com.github.packageurl.PackageURL.StandardTypes;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.versioning.ArtifactVersion;
@@ -51,7 +54,6 @@ import org.owasp.dependencycheck.data.nvdcve.DatabaseException;
 import org.owasp.dependencycheck.dependency.Confidence;
 import org.owasp.dependencycheck.dependency.Dependency;
 import org.owasp.dependencycheck.dependency.EvidenceType;
-import org.owasp.dependencycheck.dependency.Identifier;
 import org.owasp.dependencycheck.dependency.Vulnerability;
 import org.owasp.dependencycheck.exception.DependencyNotFoundException;
 import org.owasp.dependencycheck.exception.ExceptionCollection;
@@ -75,6 +77,10 @@ import java.util.Locale;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ExcludesArtifactFilter;
 import org.apache.maven.shared.dependency.graph.traversal.CollectingDependencyNodeVisitor;
+import org.owasp.dependencycheck.agent.DependencyCheckScanAgent;
+import org.owasp.dependencycheck.dependency.naming.GenericIdentifier;
+import org.owasp.dependencycheck.dependency.naming.Identifier;
+import org.owasp.dependencycheck.dependency.naming.PurlIdentifier;
 
 /**
  * @author Jeremy Long
@@ -1080,11 +1086,14 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
                 d.addEvidence(EvidenceType.VENDOR, "project", "groupid", prj.getGroupId(), Confidence.HIGHEST);
                 d.addEvidence(EvidenceType.PRODUCT, "project", "groupid", prj.getGroupId(), Confidence.LOW);
                 d.setEcosystem(JarAnalyzer.DEPENDENCY_ECOSYSTEM);
-                final Identifier id = new Identifier();
-                id.setType("maven");
-                id.setConfidence(Confidence.HIGHEST);
-                id.setValue(displayName);
-                d.addIdentifier(id);
+                Identifier id;
+                try {
+                    id = new PurlIdentifier(StandardTypes.MAVEN, artifact.getGroupId(),artifact.getArtifactId(),artifact.getVersion(),Confidence.HIGHEST);
+                } catch (MalformedPackageURLException ex) {
+                    getLog().debug("Unable to create PackageURL object:" + key);
+                    id = new GenericIdentifier("maven:" + key, Confidence.HIGHEST);
+                }
+                d.addSoftwareIdentifier(id);
                 //TODO unify the setName/version and package path - they are equivelent ideas submitted by two seperate committers
                 d.setName(String.format("%s:%s", prj.getGroupId(), prj.getArtifactId()));
                 d.setVersion(prj.getVersion());
@@ -1627,37 +1636,7 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
      */
     protected void showSummary(MavenProject mp, Dependency[] dependencies) {
         if (showSummary) {
-            final StringBuilder summary = new StringBuilder();
-            for (Dependency d : dependencies) {
-                boolean firstEntry = true;
-                final StringBuilder ids = new StringBuilder();
-                for (Vulnerability v : d.getVulnerabilities()) {
-                    if (firstEntry) {
-                        firstEntry = false;
-                    } else {
-                        ids.append(", ");
-                    }
-                    ids.append(v.getName());
-                }
-                if (ids.length() > 0) {
-                    summary.append(d.getFileName()).append(" (");
-                    firstEntry = true;
-                    for (Identifier id : d.getIdentifiers()) {
-                        if (firstEntry) {
-                            firstEntry = false;
-                        } else {
-                            summary.append(", ");
-                        }
-                        summary.append(id.getValue());
-                    }
-                    summary.append(") : ").append(ids).append(NEW_LINE);
-                }
-            }
-            if (summary.length() > 0) {
-                final String msg = String.format("%n%n" + "One or more dependencies were identified with known vulnerabilities in %s:%n%n%s"
-                        + "%n%nSee the dependency-check report for more details.%n%n", mp.getName(), summary.toString());
-                getLog().warn(msg);
-            }
+            DependencyCheckScanAgent.showSummary(mp.getName(), dependencies);
         }
     }
 

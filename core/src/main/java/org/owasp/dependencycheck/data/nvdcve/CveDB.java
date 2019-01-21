@@ -555,19 +555,13 @@ public final class CveDB implements AutoCloseable {
      * @return a list of Vulnerabilities
      * @throws DatabaseException thrown if there is an exception retrieving data
      */
-    public synchronized List<Vulnerability> getVulnerabilities(String cpeStr) throws DatabaseException {
-        final List<Vulnerability> cachedVulnerabilities = vulnerabilitiesForCpeCache.get(cpeStr);
+    public synchronized List<Vulnerability> getVulnerabilities(Cpe cpe) throws DatabaseException {
+        final List<Vulnerability> cachedVulnerabilities = vulnerabilitiesForCpeCache.get(cpe.toCpe23FS());
         if (cachedVulnerabilities != null) {
-            LOGGER.debug("Cache hit for {}", cpeStr);
+            LOGGER.debug("Cache hit for {}", cpe.toCpe23FS());
             return cachedVulnerabilities;
         } else {
-            LOGGER.debug("Cache miss for {}", cpeStr);
-        }
-        Cpe cpe = null;
-        try {
-            cpe = CpeParser.parse(cpeStr, true);
-        } catch (CpeParsingException ex) {
-            throw new DatabaseException("Invalid CPE provided: " + cpeStr, ex);
+            LOGGER.debug("Cache miss for {}", cpe.toCpe23FS());
         }
         final DependencyVersion detectedVersion = parseDependencyVersion(cpe);
 
@@ -623,11 +617,11 @@ public final class CveDB implements AutoCloseable {
                 }
             }
         } catch (SQLException ex) {
-            throw new DatabaseException("Exception retrieving vulnerability for " + cpeStr, ex);
+            throw new DatabaseException("Exception retrieving vulnerability for " + cpe.toCpe23FS(), ex);
         } finally {
             DBUtils.closeResultSet(rs);
         }
-        vulnerabilitiesForCpeCache.put(cpeStr, vulnerabilities);
+        vulnerabilitiesForCpeCache.put(cpe.toCpe23FS(), vulnerabilities);
         return vulnerabilities;
     }
 
@@ -734,9 +728,10 @@ public final class CveDB implements AutoCloseable {
      *
      * @param cve the vulnerability from the NVD CVE Data Feed to add to the
      * database
+     * @param software the list of vulnerable software for the CVE
      * @throws DatabaseException is thrown if the database
      */
-    public synchronized void updateVulnerability(CVEItem cve) {
+    public synchronized void updateVulnerability(CVEItem cve, List<VulnerableSoftware> software) {
         clearCache();
         ResultSet rs = null;
         String cveId = cve.getCve().getCVEDataMeta().getID();
@@ -936,20 +931,9 @@ public final class CveDB implements AutoCloseable {
 
             PreparedStatement insertSoftware = getPreparedStatement(INSERT_SOFTWARE);
 
-            //collect the CpeMatch from a what could be a deeply nested structure.
-            //TODO - some nodes *could* have a parent with negate=true... but I have not seen an example yet
-            String cpeStartsWithFilter = settings.getString(Settings.KEYS.CVE_CPE_STARTS_WITH_FILTER, "cpe:2.3:a:");
-
             ArrayList<CpeMatch> l = new ArrayList<>();
-            List<CpeMatch> cpeEntries = cve.getConfigurations().getNodes().stream()
-                    .collect(new NodeFlatteningCollector())
-                    .collect(new CpeMatchStreamCollector())
-                    .filter(predicate -> predicate.getCpe23Uri().startsWith(cpeStartsWithFilter))
-                    .collect(Collectors.toList());
 
-            for (CpeMatch cpe : cpeEntries) {
-                Cpe parsedCpe;
-                parsedCpe = parseCpe(cpe, cveId);
+            for (VulnerableSoftware parsedCpe : software) {
                 int cpeProductId = 0;
                 final PreparedStatement selectCpeId = getPreparedStatement(SELECT_CPE_ID);
                 selectCpeId.setString(1, parsedCpe.getVendor());
@@ -968,7 +952,7 @@ public final class CveDB implements AutoCloseable {
                         cpeProductId = rs.getInt(1);
                     }
                 } catch (SQLException ex) {
-                    throw new DatabaseException("Unable to get primary key for new cpe: " + cpe.getCpe23Uri(), ex);
+                    throw new DatabaseException("Unable to get primary key for new cpe: " + parsedCpe.toCpe23FS(), ex);
                 } finally {
                     DBUtils.closeResultSet(rs);
                 }
@@ -994,11 +978,11 @@ public final class CveDB implements AutoCloseable {
 
                 insertSoftware.setInt(1, vulnerabilityId);
                 insertSoftware.setInt(2, cpeProductId);
-                addNullableStringParameter(insertSoftware, 3, cpe.getVersionEndExcluding());
-                addNullableStringParameter(insertSoftware, 4, cpe.getVersionEndIncluding());
-                addNullableStringParameter(insertSoftware, 5, cpe.getVersionStartExcluding());
-                addNullableStringParameter(insertSoftware, 6, cpe.getVersionStartIncluding());
-                insertSoftware.setBoolean(7, cpe.getVulnerable());
+                addNullableStringParameter(insertSoftware, 3, parsedCpe.getVersionEndExcluding());
+                addNullableStringParameter(insertSoftware, 4, parsedCpe.getVersionEndIncluding());
+                addNullableStringParameter(insertSoftware, 5, parsedCpe.getVersionStartExcluding());
+                addNullableStringParameter(insertSoftware, 6, parsedCpe.getVersionStartIncluding());
+                insertSoftware.setBoolean(7, parsedCpe.isVulnerable());
 
                 if (isBatchInsertEnabled()) {
                     insertSoftware.addBatch();
@@ -1026,26 +1010,6 @@ public final class CveDB implements AutoCloseable {
         } finally {
             DBUtils.closeResultSet(rs);
         }
-    }
-
-    protected Cpe parseCpe(CpeMatch cpe, String cveId) throws DatabaseException {
-        Cpe parsedCpe;
-        try {
-            //the replace is a hack as the NVD does not properly escape backslashes in their JSON
-            parsedCpe = CpeParser.parse(cpe.getCpe23Uri(), true);
-        } catch (CpeParsingException ex) {
-            LOGGER.debug("NVD (" + cveId + ") contain an invalid 2.3 CPE: " + cpe.getCpe23Uri());
-            if (cpe.getCpe22Uri() != null && !cpe.getCpe22Uri().isEmpty()) {
-                try {
-                    parsedCpe = CpeParser.parse(cpe.getCpe22Uri(), true);
-                } catch (CpeParsingException ex2) {
-                    throw new DatabaseException("Unable to parse CPE: " + cpe.getCpe23Uri(), ex);
-                }
-            } else {
-                throw new DatabaseException("Unable to parse CPE: " + cpe.getCpe23Uri(), ex);
-            }
-        }
-        return parsedCpe;
     }
 
     /**

@@ -26,6 +26,7 @@ import static org.junit.Assert.assertFalse;
 import org.junit.Test;
 import org.owasp.dependencycheck.BaseTest;
 import us.springett.parsers.cpe.exceptions.CpeValidationException;
+import us.springett.parsers.cpe.values.LogicalValue;
 import us.springett.parsers.cpe.values.Part;
 
 /**
@@ -71,6 +72,37 @@ public class VulnerableSoftwareTest extends BaseTest {
         instance = builder.part(Part.APPLICATION).vendor("yahoo").product("toolbar").version("3.1.0.20130813024104").build();;
         result = instance.compareTo(obj);
         assertTrue(result>0);
+    }
+    
+    @Test
+    public void testCompareVersionRange() throws CpeValidationException {
+        VulnerableSoftwareBuilder builder = new VulnerableSoftwareBuilder();
+        VulnerableSoftware instance = builder.version("2.0.0").build();
+        assertTrue(instance.compareVersionRange("2.0.0"));
+        assertFalse(instance.compareVersionRange("2.0.1"));
+        
+        instance = builder.version(LogicalValue.ANY).build();
+        assertTrue(instance.compareVersionRange("2.0.1"));
+        
+        instance = builder.version(LogicalValue.NA).build();
+        assertFalse(instance.compareVersionRange("2.0.1"));
+        
+        instance = builder.version(LogicalValue.ANY).versionEndIncluding("2.0.1").build();
+        assertTrue(instance.compareVersionRange("2.0.1"));
+        assertFalse(instance.compareVersionRange("2.0.2"));
+        
+        instance = builder.version(LogicalValue.ANY).versionEndExcluding("2.0.2").build();
+        assertTrue(instance.compareVersionRange("2.0.1"));
+        assertFalse(instance.compareVersionRange("2.0.2"));
+        
+        
+        instance = builder.version(LogicalValue.ANY).versionStartIncluding("1.0.1").build();
+        assertTrue(instance.compareVersionRange("1.0.1"));
+        assertFalse(instance.compareVersionRange("1.0.0"));
+        
+        instance = builder.version(LogicalValue.ANY).versionStartExcluding("1.0.0").build();
+        assertTrue(instance.compareVersionRange("1.0.1"));
+        assertFalse(instance.compareVersionRange("1.0.0"));
     }
 
 }

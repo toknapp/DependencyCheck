@@ -17,6 +17,9 @@
  */
 package org.owasp.dependencycheck.analyzer;
 
+import com.github.packageurl.MalformedPackageURLException;
+import com.github.packageurl.PackageURL;
+import com.github.packageurl.PackageURLBuilder;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -55,6 +58,9 @@ import org.owasp.dependencycheck.analyzer.exception.AnalysisException;
 import org.owasp.dependencycheck.dependency.Confidence;
 import org.owasp.dependencycheck.dependency.Dependency;
 import org.owasp.dependencycheck.dependency.EvidenceType;
+import org.owasp.dependencycheck.dependency.naming.GenericIdentifier;
+import org.owasp.dependencycheck.dependency.naming.Identifier;
+import org.owasp.dependencycheck.dependency.naming.PurlIdentifier;
 import org.owasp.dependencycheck.exception.InitializationException;
 import org.owasp.dependencycheck.utils.FileFilterBuilder;
 import org.owasp.dependencycheck.utils.FileUtils;
@@ -622,7 +628,16 @@ public class JarAnalyzer extends AbstractFileTypeAnalyzer {
         }
 
         if (addAsIdentifier) {
-            dependency.addIdentifier("maven", String.format("%s:%s:%s", originalGroupID, originalArtifactID, version), null, Confidence.HIGH);
+            Identifier id;
+            try {
+                PackageURL purl = PackageURLBuilder.aPackageURL().withType("maven").withNamespace(originalGroupID).withName(originalArtifactID).withVersion(version).build();
+                id = new PurlIdentifier(purl, Confidence.HIGH);
+            } catch (MalformedPackageURLException ex) {
+                String gav = String.format("%s:%s:%s", originalGroupID, originalArtifactID, version);
+                LOGGER.debug("Error building package url for " + gav + "; using generic identifier instead.", ex);
+                id = new GenericIdentifier("maven:" + gav, Confidence.HIGH);
+            }
+            dependency.addSoftwareIdentifier(id);
         }
 
         // org name

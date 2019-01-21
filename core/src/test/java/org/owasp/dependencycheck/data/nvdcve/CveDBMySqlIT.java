@@ -25,11 +25,12 @@ import org.junit.After;
 import org.junit.Test;
 import org.owasp.dependencycheck.BaseTest;
 import org.owasp.dependencycheck.dependency.Vulnerability;
-import org.owasp.dependencycheck.dependency.VulnerableSoftware;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.Before;
 import us.springett.parsers.cpe.Cpe;
+import us.springett.parsers.cpe.CpeBuilder;
+import us.springett.parsers.cpe.values.Part;
 
 /**
  *
@@ -87,9 +88,10 @@ public class CveDBMySqlIT extends BaseTest {
      */
     @Test
     public void testGetVulnerabilities() throws Exception {
-        String cpeStr = "cpe:/a:apache:struts:2.1.2";
+        CpeBuilder builder = new CpeBuilder();
+        Cpe cpe = builder.part(Part.APPLICATION).vendor("apache").product("struts").version("2.1.2").build();
         try {
-            List<Vulnerability> result = instance.getVulnerabilities(cpeStr);
+            List<Vulnerability> result = instance.getVulnerabilities(cpe);
             assertTrue(result.size() > 5);
         } catch (Exception ex) {
             System.out.println("Unable to access the My SQL database; verify that the db server is running and that the schema has been generated");

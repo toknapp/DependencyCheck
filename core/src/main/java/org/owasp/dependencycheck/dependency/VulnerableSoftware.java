@@ -24,11 +24,14 @@ import javax.annotation.concurrent.ThreadSafe;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.owasp.dependencycheck.utils.DependencyVersion;
+import org.owasp.dependencycheck.utils.DependencyVersionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import us.springett.parsers.cpe.Cpe;
 import us.springett.parsers.cpe.ICpe;
 import us.springett.parsers.cpe.exceptions.CpeValidationException;
+import us.springett.parsers.cpe.values.LogicalValue;
 import us.springett.parsers.cpe.values.Part;
 
 /**
@@ -189,15 +192,17 @@ public class VulnerableSoftware extends Cpe implements Serializable {
      */
     @Override
     public boolean matches(ICpe target) {
-        boolean result = true;
+        boolean result = this.vulnerable;
         result &= compareAttributes(this.getPart(), target.getPart());
         result &= compareAttributes(this.getVendor(), target.getVendor());
         result &= compareAttributes(this.getProduct(), target.getProduct());
 
         //TODO implement versionStart etc.
-        result &= compareAttributes(this.getVersion(), target.getVersion());
+        result &= compareVersionRange(target.getVersion());
+
+        //todo - if the vulnerablity has an update we are might not be collecting it correctly...
+        // as such, this check might cause FN if the CVE has an update in the data set
         result &= compareAttributes(this.getUpdate(), target.getUpdate());
-        
         result &= compareAttributes(this.getEdition(), target.getEdition());
         result &= compareAttributes(this.getLanguage(), target.getLanguage());
         result &= compareAttributes(this.getSwEdition(), target.getSwEdition());
@@ -226,4 +231,96 @@ public class VulnerableSoftware extends Cpe implements Serializable {
     public boolean matchedBy(ICpe target) {
         return target.matches(this);
     }
+
+    /**
+     * Evaluates the target against the version and version range checks:
+     * versionEndExcluding, versionStartExcluding versionEndIncluding, and
+     * versionStartIncluding.
+     *
+     * @param targetVersion the version to compare
+     * @return <code>true</code> if the target version is matched; otherwise
+     * <code>false</code>
+     */
+    protected boolean compareVersionRange(String targetVersion) {
+        if (LogicalValue.NA.getAbbreviation().equals(this.getVersion())) {
+            return false;
+        }
+        //if any of the four conditions will be evaluated - then true;
+        boolean result = (versionEndExcluding != null && !versionEndExcluding.isEmpty())
+                || (versionStartExcluding != null && !versionStartExcluding.isEmpty())
+                || (versionEndIncluding != null && !versionEndIncluding.isEmpty())
+                || (versionStartIncluding != null && !versionStartIncluding.isEmpty());
+
+        if (!result && compareAttributes(this.getVersion(), targetVersion)) {
+            return true;
+        }
+
+        DependencyVersion target = new DependencyVersion(targetVersion);
+        if (target.getVersionParts().isEmpty()) {
+            return false;
+        }
+        if (result && versionEndExcluding != null && !versionEndExcluding.isEmpty()) {
+            DependencyVersion endExcluding = new DependencyVersion(versionEndExcluding);
+            result = endExcluding.compareTo(target) > 0;
+        }
+        if (result && versionStartExcluding != null && !versionStartExcluding.isEmpty()) {
+            DependencyVersion startExcluding = new DependencyVersion(versionStartExcluding);
+            result = startExcluding.compareTo(target) < 0;
+        }
+        if (result && versionEndIncluding != null && !versionEndIncluding.isEmpty()) {
+            DependencyVersion endIncluding = new DependencyVersion(versionEndIncluding);
+            result &= endIncluding.compareTo(target) >= 0;
+        }
+        if (result && versionStartIncluding != null && !versionStartIncluding.isEmpty()) {
+            DependencyVersion startIncluding = new DependencyVersion(versionStartIncluding);
+            result &= startIncluding.compareTo(target) <= 0;
+        }
+        return result;
+    }
+
+    /**
+     * Returns the versionEndExcluding.
+     *
+     * @return the versionEndExcluding
+     */
+    public String getVersionEndExcluding() {
+        return versionEndExcluding;
+    }
+
+    /**
+     * Returns the versionEndIncluding.
+     *
+     * @return the versionEndIncluding
+     */
+    public String getVersionEndIncluding() {
+        return versionEndIncluding;
+    }
+
+    /**
+     * Returns the versionStartExcluding.
+     *
+     * @return the versionStartExcluding
+     */
+    public String getVersionStartExcluding() {
+        return versionStartExcluding;
+    }
+
+    /**
+     * Returns the versionStartIncluding.
+     *
+     * @return the versionStartIncluding
+     */
+    public String getVersionStartIncluding() {
+        return versionStartIncluding;
+    }
+
+    /**
+     * Returns the value of vulnerable.
+     *
+     * @return the value of vulnerable
+     */
+    public boolean isVulnerable() {
+        return vulnerable;
+    }
+
 }
