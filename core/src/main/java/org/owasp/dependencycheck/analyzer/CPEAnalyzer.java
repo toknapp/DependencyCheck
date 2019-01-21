@@ -53,8 +53,10 @@ import org.owasp.dependencycheck.dependency.Confidence;
 import org.owasp.dependencycheck.dependency.Dependency;
 import org.owasp.dependencycheck.dependency.Evidence;
 import org.owasp.dependencycheck.dependency.EvidenceType;
-import org.owasp.dependencycheck.dependency.Identifier;
+import org.owasp.dependencycheck.dependency.naming.GenericIdentifier;
 import org.owasp.dependencycheck.dependency.VulnerableSoftware;
+import org.owasp.dependencycheck.dependency.naming.CpeIdentifier;
+import org.owasp.dependencycheck.dependency.naming.Identifier;
 import org.owasp.dependencycheck.exception.InitializationException;
 import org.owasp.dependencycheck.utils.DependencyVersion;
 import org.owasp.dependencycheck.utils.DependencyVersionUtil;
@@ -63,6 +65,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import us.springett.parsers.cpe.Cpe;
 import us.springett.parsers.cpe.CpeBuilder;
+import us.springett.parsers.cpe.CpeParser;
+import us.springett.parsers.cpe.exceptions.CpeParsingException;
 import us.springett.parsers.cpe.exceptions.CpeValidationException;
 import us.springett.parsers.cpe.values.Part;
 
@@ -628,6 +632,8 @@ public class CPEAnalyzer extends AbstractAnalyzer {
      */
     protected boolean determineIdentifiers(Dependency dependency, String vendor, String product,
             Confidence currentConfidence) throws UnsupportedEncodingException, AnalysisException {
+
+        final CpeBuilder cpeBuilder = new CpeBuilder();
         final Set<Cpe> cpes = cve.getCPEs(vendor, product);
         if (cpes.isEmpty()) {
             return false;
@@ -638,26 +644,56 @@ public class CPEAnalyzer extends AbstractAnalyzer {
         boolean hasBroadMatch = false;
         final List<IdentifierMatch> collected = new ArrayList<>();
 
+        int maxDepth = 0;
+        //TODO - review and update for new JSON data
+        for (Cpe cpe : cpes) {
+            final DependencyVersion dbVer = DependencyVersionUtil.parseVersion(cpe.getVersion());
+            if (dbVer != null) {
+                final int count = dbVer.getVersionParts().size();
+                if (count > maxDepth) {
+                    maxDepth = count;
+                }
+            }
+        }
+
+        if (dependency.getVersion() != null && !dependency.getVersion().isEmpty()) {
+            DependencyVersion depVersion = new DependencyVersion(dependency.getVersion());
+            if (depVersion.getVersionParts().size() > 0) {
+                cpeBuilder.part(Part.APPLICATION).vendor(vendor).product(product);
+                //Only semantic versions used in NVD and evidence may contain an update version
+                if (maxDepth == 3 && depVersion.getVersionParts().size() == 4
+                        && depVersion.getVersionParts().get(3).matches("^(v|beta|alpha|u|rc|m|20\\d\\d).*$")) {
+
+                    cpeBuilder.version(StringUtils.join(depVersion.getVersionParts().subList(0, 3), "."));
+                    //when written - no update versions in the NVD start with v### - they all strip the v off 
+                    if (depVersion.getVersionParts().get(3).matches("^v\\d.*$")) {
+                        cpeBuilder.update(depVersion.getVersionParts().get(3).substring(1));
+                    } else {
+                        cpeBuilder.update(depVersion.getVersionParts().get(3));
+                    }
+                } else {
+                    cpeBuilder.version(depVersion.toString());
+                }
+                try {
+                    Cpe depCpe = cpeBuilder.build();
+                    final String url = String.format(NVD_SEARCH_URL, URLEncoder.encode(vendor, UTF8),
+                            URLEncoder.encode(product, UTF8), URLEncoder.encode(depCpe.getVersion(), UTF8));
+                    final IdentifierMatch match = new IdentifierMatch(depCpe, null, IdentifierConfidence.EXACT_MATCH, currentConfidence);
+                    collected.add(match);
+                } catch (CpeValidationException ex) {
+                    throw new AnalysisException(String.format("Unable to create a CPE for %s:%s:%s", vendor, product, bestGuess.toString()));
+                }
+            }
+        }
         //TODO the following algorithm incorrectly identifies things as a lower version
         // if there lower confidence evidence when the current (highest) version number
         // is newer then anything in the NVD.
-        for (Confidence conf : Confidence.values()) {
+        for (Confidence conf
+                : Confidence.values()) {
             for (Evidence evidence : dependency.getIterator(EvidenceType.VERSION, conf)) {
                 final DependencyVersion evVer = DependencyVersionUtil.parseVersion(evidence.getValue());
                 if (evVer == null) {
                     continue;
-                }
-
-                int maxDepth = 0;
-                //TODO - review and update for new JSON data
-                for (Cpe cpe : cpes) {
-                    final DependencyVersion dbVer = DependencyVersionUtil.parseVersion(cpe.getVersion());
-                    if (dbVer != null) {
-                        final int count = dbVer.getVersionParts().size();
-                        if (count > maxDepth) {
-                            maxDepth = count;
-                        }
-                    }
                 }
 
                 DependencyVersion evBaseVer = null;
@@ -669,24 +705,24 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                         evBaseVer.setVersionParts(evVer.getVersionParts().subList(0, 3));
                     }
                 }
+
                 //TODO - review and update for new JSON data
                 for (Cpe vs : cpes) {
-                    final DependencyVersion dbVer;
-                    if (vs.getUpdate() != null && !vs.getUpdate().isEmpty() && !vs.getUpdate().startsWith("~")) {
-                        dbVer = DependencyVersionUtil.parseVersion(vs.getVersion() + '.' + vs.getUpdate());
-                    } else {
-                        dbVer = DependencyVersionUtil.parseVersion(vs.getVersion());
+                    final DependencyVersion dbVer = DependencyVersionUtil.parseVersion(vs.getVersion());
+                    DependencyVersion dbVerUpdate = dbVer;
+                    if (vs.getUpdate() != null && !vs.getUpdate().isEmpty() && !vs.getUpdate().startsWith("*") && !vs.getUpdate().startsWith("-")) {
+                        dbVerUpdate = DependencyVersionUtil.parseVersion(vs.getVersion() + '.' + vs.getUpdate());
                     }
                     if (dbVer == null) { //special case, no version specified - everything is vulnerable
                         hasBroadMatch = true;
                         final String url = String.format(NVD_SEARCH_BROAD_URL, URLEncoder.encode(vs.getVendor(), UTF8),
                                 URLEncoder.encode(vs.getProduct(), UTF8));
-                        final IdentifierMatch match = new IdentifierMatch("cpe", vs.toCpe23FS(), url, IdentifierConfidence.BROAD_MATCH, conf);
+                        final IdentifierMatch match = new IdentifierMatch(vs, url, IdentifierConfidence.BROAD_MATCH, conf);
                         collected.add(match);
                     } else if (evVer.equals(dbVer)) { //yeah! exact match
                         final String url = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.getVendor(), UTF8),
                                 URLEncoder.encode(vs.getProduct(), UTF8), URLEncoder.encode(vs.getVersion(), UTF8));
-                        final IdentifierMatch match = new IdentifierMatch("cpe", vs.toCpe23FS(), url, IdentifierConfidence.EXACT_MATCH, conf);
+                        final IdentifierMatch match = new IdentifierMatch(vs, url, IdentifierConfidence.EXACT_MATCH, conf);
                         collected.add(match);
                     } else if (evBaseVer != null && evBaseVer.equals(dbVer)
                             && (bestGuessConf == null || bestGuessConf.compareTo(conf) > 0)) {
@@ -694,10 +730,8 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                         bestGuess = dbVer;
                         bestGuessURL = String.format(NVD_SEARCH_URL, URLEncoder.encode(vs.getVendor(), UTF8),
                                 URLEncoder.encode(vs.getProduct(), UTF8), URLEncoder.encode(vs.getVersion(), UTF8));
-
-                        //TODO the following isn't quite right is it? need to think about this guessing game a bit more.
-                    } else if (evVer.getVersionParts().size() <= dbVer.getVersionParts().size()
-                            && evVer.matchesAtLeastThreeLevels(dbVer)) {
+                    } else if (evVer.getVersionParts().size() <= dbVerUpdate.getVersionParts().size()
+                            && evVer.matchesAtLeastThreeLevels(dbVerUpdate)) {
                         if (bestGuessConf == null || bestGuessConf.compareTo(conf) > 0) {
                             if (bestGuess.getVersionParts().size() < dbVer.getVersionParts().size()) {
                                 bestGuess = dbVer;
@@ -713,10 +747,23 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                 }
             }
         }
-        final CpeBuilder cpeBuilder = new CpeBuilder();
 
-        cpeBuilder.part(Part.APPLICATION).vendor(vendor).product(product).version(bestGuess.toString());
+        cpeBuilder.part(Part.APPLICATION).vendor(vendor).product(product);
+        if (maxDepth == 3 && bestGuess.getVersionParts().size() == 4
+                && bestGuess.getVersionParts().get(3).matches("^(v|beta|alpha|u|rc|m|20\\d\\d).*$")) {
+
+            cpeBuilder.version(StringUtils.join(bestGuess.getVersionParts().subList(0, 3), "."));
+            //when written - no update versions in the NVD start with v### - they all strip the v off 
+            if (bestGuess.getVersionParts().get(3).matches("^v\\d.*$")) {
+                cpeBuilder.update(bestGuess.getVersionParts().get(3).substring(1));
+            } else {
+                cpeBuilder.update(bestGuess.getVersionParts().get(3));
+            }
+        } else {
+            cpeBuilder.version(bestGuess.toString());
+        }
         final Cpe guessCpe;
+
         try {
             guessCpe = cpeBuilder.build();
         } catch (CpeValidationException ex) {
@@ -726,33 +773,35 @@ public class CPEAnalyzer extends AbstractAnalyzer {
         if (hasBroadMatch) { //if we have a broad match we can add the URL to the best guess.
             url = String.format(NVD_SEARCH_BROAD_URL, URLEncoder.encode(vendor, "UTF-8"), URLEncoder.encode(product, "UTF-8"));
         }
-        if (bestGuessURL != null) {
+        if (bestGuessURL
+                != null) {
             url = bestGuessURL;
         }
-        if (bestGuessConf == null) {
+        if (bestGuessConf
+                == null) {
             bestGuessConf = Confidence.LOW;
         }
-        final IdentifierMatch match = new IdentifierMatch("cpe", guessCpe.toCpe23FS(), url, IdentifierConfidence.BEST_GUESS, bestGuessConf);
+        final IdentifierMatch match = new IdentifierMatch(guessCpe, url, IdentifierConfidence.BEST_GUESS, bestGuessConf);
 
         collected.add(match);
 
         Collections.sort(collected);
-        final IdentifierConfidence bestIdentifierQuality = collected.get(0).getConfidence();
+        final IdentifierConfidence bestIdentifierQuality = collected.get(0).getIdentifierConfidence();
         final Confidence bestEvidenceQuality = collected.get(0).getEvidenceConfidence();
         boolean identifierAdded = false;
         for (IdentifierMatch m : collected) {
-            if (bestIdentifierQuality.equals(m.getConfidence())
+            if (bestIdentifierQuality.equals(m.getIdentifierConfidence())
                     && bestEvidenceQuality.equals(m.getEvidenceConfidence())) {
-                final Identifier i = m.getIdentifier();
+                final CpeIdentifier i = m.getIdentifier();
                 if (bestIdentifierQuality == IdentifierConfidence.BEST_GUESS) {
                     i.setConfidence(Confidence.LOW);
                 } else {
                     i.setConfidence(bestEvidenceQuality);
                 }
                 //TODO - while this gets the job down it is slow; consider refactoring
-                dependency.addIdentifier(i);
+                dependency.addVulnerableSoftwareIdentifier(i);
                 suppression.analyze(dependency, null);
-                if (dependency.getIdentifiers().contains(i)) {
+                if (dependency.getVulnerableSoftwareIdentifiers().contains(i)) {
                     identifierAdded = true;
                 }
             }
@@ -769,6 +818,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
     @Override
     protected String getAnalyzerEnabledSettingKey() {
         return Settings.KEYS.ANALYZER_CPE_ENABLED;
+
     }
 
     /**
@@ -799,17 +849,13 @@ public class CPEAnalyzer extends AbstractAnalyzer {
     private static class IdentifierMatch implements Comparable<IdentifierMatch> {
 
         /**
-         * The confidence in the evidence used to identify this match.
-         */
-        private Confidence evidenceConfidence;
-        /**
          * The confidence whether this is an exact match, or a best guess.
          */
-        private IdentifierConfidence confidence;
+        private IdentifierConfidence identifierConfidence;
         /**
          * The CPE identifier.
          */
-        private Identifier identifier;
+        private CpeIdentifier identifier;
 
         /**
          * Constructs an IdentifierMatch.
@@ -822,10 +868,9 @@ public class CPEAnalyzer extends AbstractAnalyzer {
          * @param evidenceConfidence the confidence of the evidence used to find
          * the identifier
          */
-        IdentifierMatch(String type, String value, String url, IdentifierConfidence identifierConfidence, Confidence evidenceConfidence) {
-            this.identifier = new Identifier(type, value, url);
-            this.confidence = identifierConfidence;
-            this.evidenceConfidence = evidenceConfidence;
+        IdentifierMatch(Cpe cpe, String url, IdentifierConfidence identifierConfidence, Confidence evidenceConfidence) {
+            this.identifier = new CpeIdentifier(cpe, url, evidenceConfidence);
+            this.identifierConfidence = identifierConfidence;
         }
 
         //<editor-fold defaultstate="collapsed" desc="Property implementations: evidenceConfidence, confidence, identifier">
@@ -835,7 +880,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
          * @return the value of evidenceConfidence
          */
         public Confidence getEvidenceConfidence() {
-            return evidenceConfidence;
+            return this.identifier.getConfidence();
         }
 
         /**
@@ -844,7 +889,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
          * @param evidenceConfidence new value of evidenceConfidence
          */
         public void setEvidenceConfidence(Confidence evidenceConfidence) {
-            this.evidenceConfidence = evidenceConfidence;
+            this.identifier.setConfidence(evidenceConfidence);
         }
 
         /**
@@ -852,8 +897,8 @@ public class CPEAnalyzer extends AbstractAnalyzer {
          *
          * @return the value of confidence
          */
-        public IdentifierConfidence getConfidence() {
-            return confidence;
+        public IdentifierConfidence getIdentifierConfidence() {
+            return identifierConfidence;
         }
 
         /**
@@ -861,8 +906,8 @@ public class CPEAnalyzer extends AbstractAnalyzer {
          *
          * @param confidence new value of confidence
          */
-        public void setConfidence(IdentifierConfidence confidence) {
-            this.confidence = confidence;
+        public void setIdentifierConfidence(IdentifierConfidence confidence) {
+            this.identifierConfidence = confidence;
         }
 
         /**
@@ -870,7 +915,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
          *
          * @return the value of identifier
          */
-        public Identifier getIdentifier() {
+        public CpeIdentifier getIdentifier() {
             return identifier;
         }
 
@@ -879,7 +924,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
          *
          * @param identifier new value of identifier
          */
-        public void setIdentifier(Identifier identifier) {
+        public void setIdentifier(CpeIdentifier identifier) {
             this.identifier = identifier;
         }
         //</editor-fold>
@@ -892,8 +937,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
          */
         @Override
         public String toString() {
-            return "IdentifierMatch{" + "evidenceConfidence=" + evidenceConfidence
-                    + ", confidence=" + confidence + ", identifier=" + identifier + '}';
+            return "IdentifierMatch{ IdentifierConfidence=" + identifierConfidence + ", identifier=" + identifier + '}';
         }
 
         /**
@@ -904,8 +948,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
         @Override
         public int hashCode() {
             int hash = 5;
-            hash = 97 * hash + (this.evidenceConfidence != null ? this.evidenceConfidence.hashCode() : 0);
-            hash = 97 * hash + (this.confidence != null ? this.confidence.hashCode() : 0);
+            hash = 97 * hash + (this.identifierConfidence != null ? this.identifierConfidence.hashCode() : 0);
             hash = 97 * hash + (this.identifier != null ? this.identifier.hashCode() : 0);
             return hash;
         }
@@ -925,10 +968,10 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                 return false;
             }
             final IdentifierMatch other = (IdentifierMatch) obj;
-            if (this.evidenceConfidence != other.evidenceConfidence) {
+            if (this.identifier.getConfidence() != other.identifier.getConfidence()) {
                 return false;
             }
-            if (this.confidence != other.confidence) {
+            if (this.identifierConfidence != other.identifierConfidence) {
                 return false;
             }
             return !(this.identifier != other.identifier && (this.identifier == null || !this.identifier.equals(other.identifier)));
@@ -945,8 +988,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
         @Override
         public int compareTo(IdentifierMatch o) {
             return new CompareToBuilder()
-                    .append(confidence, o.confidence)
-                    .append(evidenceConfidence, o.evidenceConfidence)
+                    .append(identifierConfidence, o.identifierConfidence)
                     .append(identifier, o.identifier)
                     .toComparison();
         }

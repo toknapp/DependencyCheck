@@ -102,13 +102,15 @@ public class CveDBIT extends BaseDBTestCase {
      */
     @Test
     public void testGetVulnerabilities() throws Exception {
-        String cpeStr = "cpe:/a:apache:struts:2.1.2";
+        
+        CpeBuilder builder = new CpeBuilder();
+        Cpe cpe = builder.part(Part.APPLICATION).vendor("apache").product("struts").version("2.1.2").build();
         List<Vulnerability> results;
 
-        results = instance.getVulnerabilities(cpeStr);
+        results = instance.getVulnerabilities(cpe);
         assertTrue(results.size() > 5);
-        cpeStr = "cpe:/a:apache:tomcat:6.0.1";
-        results = instance.getVulnerabilities(cpeStr);
+        cpe = builder.part(Part.APPLICATION).vendor("apache").product("tomcat").version("6.0.1").build();
+        results = instance.getVulnerabilities(cpe);
         assertTrue(results.size() > 1);
 
         boolean found = false;
@@ -154,7 +156,7 @@ public class CveDBIT extends BaseDBTestCase {
                 .versionStartIncluding("1.0.0").versionEndExcluding("1.0.1p").build());
         results = instance.getMatchingSoftware(identified, software);
         assertNotNull(results);
-        assertEquals("cpe:/a:openssl:openssl:1.0.1q", results.toCpe22Uri());
+        assertEquals("cpe:/a:openssl:openssl:1.0.1p", results.toCpe22Uri());
 
         software.clear();
 
@@ -187,9 +189,9 @@ public class CveDBIT extends BaseDBTestCase {
 
         software.clear();
 
-        software.add(vsBuilder.part(Part.APPLICATION).vendor("jruby").product("jruby").version(LogicalValue.NA).build());
+        software.add(vsBuilder.part(Part.APPLICATION).vendor("springsource").product("spring_framework").version(LogicalValue.NA).build());
         identified = cpeBuilder.part(Part.APPLICATION).vendor("springsource").product("spring_framework").version("1.6.3").build();
         results = instance.getMatchingSoftware(identified, software);
-        assertNotNull(results);
+        assertNull(results);
     }
 }

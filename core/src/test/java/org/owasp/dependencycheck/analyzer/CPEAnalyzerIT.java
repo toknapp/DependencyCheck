@@ -31,10 +31,12 @@ import org.owasp.dependencycheck.Engine;
 import org.owasp.dependencycheck.data.cpe.IndexEntry;
 import org.owasp.dependencycheck.dependency.Confidence;
 import org.owasp.dependencycheck.dependency.Dependency;
-import org.owasp.dependencycheck.dependency.Identifier;
+import org.owasp.dependencycheck.dependency.naming.GenericIdentifier;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import org.owasp.dependencycheck.dependency.EvidenceType;
+import org.owasp.dependencycheck.dependency.naming.Identifier;
 
 /**
  *
@@ -123,6 +125,14 @@ public class CPEAnalyzerIT extends BaseDBTestCase {
     /**
      * Test of determineCPE method, of class CPEAnalyzer.
      *
+     * @param depName dependency name
+     * @param expResult expected results
+     * @param cpeAnalyzer the CPE analyzer
+     * @param fnAnalyzer the file name analyzer
+     * @param jarAnalyzer the jar analyzer
+     * @param hAnalyzer the hint analyzer
+     * @param fp the false positive analyzer
+     * @param cpeSuppression the CPE suppression analyzer
      * @throws Exception is thrown when an exception occurs
      */
     public void callDetermineCPE_full(String depName, String expResult, CPEAnalyzer cpeAnalyzer, FileNameAnalyzer fnAnalyzer,
@@ -142,19 +152,17 @@ public class CPEAnalyzerIT extends BaseDBTestCase {
 
         if (expResult != null) {
             boolean found = false;
-            for (Identifier i : dep.getIdentifiers()) {
+            for (Identifier i : dep.getVulnerableSoftwareIdentifiers()) {
                 if (expResult.equals(i.getValue())) {
                     found = true;
                     break;
-                } else if (i.getType().equals("cpe")) {
-                    System.out.println("found " + i.getValue());
                 }
             }
-            assertTrue("Incorrect match: { dep:'" + dep.getFileName() + "' }", found);
+            assertTrue("Match not found: { dep:'" + dep.getFileName() + "', exp:'" + expResult + "' }", found);
         } else {
-            for (Identifier i : dep.getIdentifiers()) {
-                assertFalse(String.format("%s - found a CPE identifier when should have been none (found '%s')", dep.getFileName(), i.getValue()), "cpe".equals(i.getType()));
-            }
+            dep.getVulnerableSoftwareIdentifiers().forEach((id) -> {
+                fail("Unexpected match found: { dep:'" + dep.getFileName() + "', found:'" + id + "' }");
+            });
         }
     }
 
@@ -214,20 +222,20 @@ public class CPEAnalyzerIT extends BaseDBTestCase {
 
             String expResult = "cpe:2.3:a:apache:struts:2.1.2:*:*:*:*:*:*:*";
 
-            for (Identifier i : commonValidator.getIdentifiers()) {
-                assertFalse("Apache Common Validator - found a CPE identifier?", "cpe".equals(i.getType()));
-            }
+            commonValidator.getVulnerableSoftwareIdentifiers().forEach((i) -> {
+                fail("Apache Common Validator found an unexpected CPE identifier - " + i.getValue());
+            });
 
-            assertTrue("Incorrect match size - struts", struts.getIdentifiers().size() >= 1);
+            assertTrue("Incorrect match size - struts", struts.getVulnerableSoftwareIdentifiers().size() >= 1);
             boolean found = false;
-            for (Identifier i : struts.getIdentifiers()) {
+            for (Identifier i : struts.getVulnerableSoftwareIdentifiers()) {
                 if (expResult.equals(i.getValue())) {
                     found = true;
                     break;
                 }
             }
             assertTrue("Incorrect match - struts", found);
-            assertTrue("Incorrect match size - spring3 - " + spring3.getIdentifiers().size(), spring3.getIdentifiers().size() >= 1);
+            assertTrue("Incorrect match size - spring3 - " + spring3.getVulnerableSoftwareIdentifiers().size(), spring3.getVulnerableSoftwareIdentifiers().size() >= 1);
 
             jarAnalyzer.close();
         }
@@ -240,7 +248,7 @@ public class CPEAnalyzerIT extends BaseDBTestCase {
      */
     @Test
     public void testDetermineIdentifiers() throws Exception {
-        callDetermieIdentifiers("eclipse", "jetty", "9.4.8.v20171121", "cpe:2.3:a:eclipse:jetty:9.4.8:*:*:*:*:*:*:*");
+        callDetermieIdentifiers("eclipse", "jetty", "9.4.8.v20171121", "cpe:2.3:a:eclipse:jetty:9.4.8:20171121:*:*:*:*:*:*");
         callDetermieIdentifiers("openssl", "openssl", "1.0.1c", "cpe:2.3:a:openssl:openssl:1.0.1c:*:*:*:*:*:*:*");
     }
 
@@ -268,13 +276,10 @@ public class CPEAnalyzerIT extends BaseDBTestCase {
             instance.close();
         }
 
-        boolean found = false;
-        for (Identifier i : dep.getIdentifiers()) {
-            if (expectedCpe.equals(i.getValue())) {
-                found = true;
-                break;
-            }
-        }
+        boolean found = dep.getVulnerableSoftwareIdentifiers().stream().anyMatch(id->{
+            System.out.println(id.getValue());
+            return expectedCpe.equals(id.getValue());
+        });
         assertTrue(String.format("%s:%s%s identifier not found", vendor, product, version), found);
     }
 

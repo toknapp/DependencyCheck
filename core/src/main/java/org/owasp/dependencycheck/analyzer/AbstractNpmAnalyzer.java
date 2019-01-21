@@ -17,6 +17,10 @@
  */
 package org.owasp.dependencycheck.analyzer;
 
+import com.github.packageurl.MalformedPackageURLException;
+import com.github.packageurl.PackageURL;
+import com.github.packageurl.PackageURL.StandardTypes;
+import com.github.packageurl.PackageURLBuilder;
 import org.owasp.dependencycheck.Engine;
 import org.owasp.dependencycheck.dependency.Confidence;
 import org.owasp.dependencycheck.dependency.Dependency;
@@ -35,6 +39,9 @@ import javax.json.JsonValue;
 import javax.json.JsonValue.ValueType;
 import org.owasp.dependencycheck.analyzer.exception.AnalysisException;
 import org.owasp.dependencycheck.dependency.EvidenceType;
+import org.owasp.dependencycheck.dependency.naming.GenericIdentifier;
+import org.owasp.dependencycheck.dependency.naming.Identifier;
+import org.owasp.dependencycheck.dependency.naming.PurlIdentifier;
 import org.owasp.dependencycheck.utils.Checksum;
 
 /**
@@ -126,7 +133,16 @@ public abstract class AbstractNpmAnalyzer extends AbstractFileTypeAnalyzer {
         nodeModule.addProjectReference(dependency.getName() + ": " + scope);
         nodeModule.setName(name);
         nodeModule.setVersion(version);
-        nodeModule.addIdentifier("npm", String.format("%s:%s", name, version), null, Confidence.HIGHEST);
+
+        Identifier id;
+        try {
+            PackageURL purl = PackageURLBuilder.aPackageURL().withType(StandardTypes.NPM).withName(name).withVersion(version).build();
+            id = new PurlIdentifier(purl, Confidence.HIGHEST);
+        } catch (MalformedPackageURLException ex) {
+            LOGGER.debug("Unable to generate Purl - using a generic identifier instead " + ex.getMessage());
+            id = new GenericIdentifier(String.format("npm:%s:%s", dependency.getName(), version), Confidence.HIGHEST);
+        }
+        nodeModule.addSoftwareIdentifier(id);
         return nodeModule;
     }
 
@@ -265,7 +281,16 @@ public abstract class AbstractNpmAnalyzer extends AbstractFileTypeAnalyzer {
         if (version != null) {
             displayName = String.format("%s:%s", displayName, version);
             dependency.setVersion(version);
-            dependency.addIdentifier("npm", String.format("%s:%s", dependency.getName(), version), null, Confidence.HIGHEST);
+
+            Identifier id;
+            try {
+                PackageURL purl = PackageURLBuilder.aPackageURL().withType(StandardTypes.NPM).withName(dependency.getName()).withVersion(version).build();
+                id = new PurlIdentifier(purl, Confidence.HIGHEST);
+            } catch (MalformedPackageURLException ex) {
+                LOGGER.debug("Unable to generate Purl - using a generic identifier instead " + ex.getMessage());
+                id = new GenericIdentifier(String.format("npm:%s:%s", dependency.getName(), version), Confidence.HIGHEST);
+            }
+            dependency.addSoftwareIdentifier(id);
         }
         if (displayName != null) {
             dependency.setDisplayFileName(displayName);

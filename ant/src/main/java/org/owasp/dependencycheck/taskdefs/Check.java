@@ -31,9 +31,9 @@ import org.apache.tools.ant.types.ResourceCollection;
 import org.apache.tools.ant.types.resources.FileProvider;
 import org.apache.tools.ant.types.resources.Resources;
 import org.owasp.dependencycheck.Engine;
+import org.owasp.dependencycheck.agent.DependencyCheckScanAgent;
 import org.owasp.dependencycheck.data.nvdcve.DatabaseException;
 import org.owasp.dependencycheck.dependency.Dependency;
-import org.owasp.dependencycheck.dependency.Identifier;
 import org.owasp.dependencycheck.dependency.Vulnerability;
 import org.owasp.dependencycheck.exception.ExceptionCollection;
 import org.owasp.dependencycheck.exception.ReportException;
@@ -1278,7 +1278,7 @@ public class Check extends Update {
                 checkForFailure(engine.getDependencies());
             }
             if (this.showSummary) {
-                showSummary(engine.getDependencies());
+                DependencyCheckScanAgent.showSummary(engine.getDependencies());
             }
         } catch (DatabaseException ex) {
             final String msg = "Unable to connect to the dependency-check database; analysis has stopped";
@@ -1401,47 +1401,6 @@ public class Check extends Update {
                         + "See the dependency-check report for more details.%n%n");
             }
             throw new BuildException(msg);
-        }
-    }
-
-    /**
-     * Generates a warning message listing a summary of dependencies and their
-     * associated CPE and CVE entries.
-     *
-     * @param dependencies a list of dependency objects
-     */
-    private void showSummary(Dependency[] dependencies) {
-        final StringBuilder summary = new StringBuilder();
-        for (Dependency d : dependencies) {
-            boolean firstEntry = true;
-            final StringBuilder ids = new StringBuilder();
-            for (Vulnerability v : d.getVulnerabilities(true)) {
-                if (firstEntry) {
-                    firstEntry = false;
-                } else {
-                    ids.append(", ");
-                }
-                ids.append(v.getName());
-            }
-            if (ids.length() > 0) {
-                summary.append(d.getFileName()).append(" (");
-                firstEntry = true;
-                for (Identifier id : d.getIdentifiers()) {
-                    if (firstEntry) {
-                        firstEntry = false;
-                    } else {
-                        summary.append(", ");
-                    }
-                    summary.append(id.getValue());
-                }
-                summary.append(") : ").append(ids).append(NEW_LINE);
-            }
-        }
-        if (summary.length() > 0) {
-            final String msg = String.format("%n%n"
-                    + "One or more dependencies were identified with known vulnerabilities:%n%n%s"
-                    + "%n%nSee the dependency-check report for more details.%n%n", summary.toString());
-            log(msg, Project.MSG_WARN);
         }
     }
 

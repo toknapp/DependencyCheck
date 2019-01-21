@@ -17,6 +17,9 @@
  */
 package org.owasp.dependencycheck.analyzer;
 
+import com.github.packageurl.MalformedPackageURLException;
+import com.github.packageurl.PackageURL;
+import com.github.packageurl.PackageURLBuilder;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -55,6 +58,9 @@ import org.owasp.dependencycheck.analyzer.exception.AnalysisException;
 import org.owasp.dependencycheck.dependency.Confidence;
 import org.owasp.dependencycheck.dependency.Dependency;
 import org.owasp.dependencycheck.dependency.EvidenceType;
+import org.owasp.dependencycheck.dependency.naming.GenericIdentifier;
+import org.owasp.dependencycheck.dependency.naming.Identifier;
+import org.owasp.dependencycheck.dependency.naming.PurlIdentifier;
 import org.owasp.dependencycheck.exception.InitializationException;
 import org.owasp.dependencycheck.utils.FileFilterBuilder;
 import org.owasp.dependencycheck.utils.FileUtils;
@@ -139,10 +145,7 @@ public class JarAnalyzer extends AbstractFileTypeAnalyzer {
             "embed-dependency",
             "ipojo-components",
             "ipojo-extension",
-            "eclipse-sourcereferences",
-            "built-os",
-            "build-host",
-            "build-date");
+            "eclipse-sourcereferences");
     /**
      * Deprecated Jar manifest attribute, that is, nonetheless, useful for
      * analysis.
@@ -261,12 +264,12 @@ public class JarAnalyzer extends AbstractFileTypeAnalyzer {
     public void analyzeDependency(Dependency dependency, Engine engine) throws AnalysisException {
         final List<ClassNameInformation> classNames = collectClassNames(dependency);
         final String fileName = dependency.getFileName().toLowerCase();
-        if (classNames.isEmpty()
+        if ((classNames.isEmpty()
                 && (fileName.endsWith("-sources.jar")
                 || fileName.endsWith("-javadoc.jar")
                 || fileName.endsWith("-src.jar")
                 || fileName.endsWith("-doc.jar")
-                || isMacOSMetaDataFile(dependency, engine))
+                || isMacOSMetaDataFile(dependency, engine)))
                 || !isZipFile(dependency)) {
             engine.removeDependency(dependency);
             return;
@@ -494,7 +497,7 @@ public class JarAnalyzer extends AbstractFileTypeAnalyzer {
         final Enumeration<JarEntry> entries = jar.entries();
         while (entries.hasMoreElements()) {
             final JarEntry entry = entries.nextElement();
-            final String entryName = (new File(entry.getName())).getName().toLowerCase();
+            final String entryName = new File(entry.getName()).getName().toLowerCase();
             if (!entry.isDirectory() && "pom.xml".equals(entryName)
                     && entry.getName().toUpperCase().startsWith("META-INF")) {
                 LOGGER.trace("POM Entry found: {}", entry.getName());
@@ -564,8 +567,18 @@ public class JarAnalyzer extends AbstractFileTypeAnalyzer {
             groupid = parentGroupId;
         }
 
+        final String originalGroupID = groupid;
+        if (groupid != null && (groupid.startsWith("org.") || groupid.startsWith("com."))) {
+            groupid = groupid.substring(4);
+        }
+
         if ((artifactid == null || artifactid.isEmpty()) && parentArtifactId != null && !parentArtifactId.isEmpty()) {
             artifactid = parentArtifactId;
+        }
+
+        final String originalArtifactID = artifactid;
+        if (artifactid != null && (artifactid.startsWith("org.") || artifactid.startsWith("com."))) {
+            artifactid = artifactid.substring(4);
         }
 
         if ((version == null || version.isEmpty()) && parentVersion != null && !parentVersion.isEmpty()) {
@@ -615,7 +628,17 @@ public class JarAnalyzer extends AbstractFileTypeAnalyzer {
         }
 
         if (addAsIdentifier) {
-            dependency.addIdentifier("maven", String.format("%s:%s:%s", groupid, artifactid, version), null, Confidence.HIGH);
+            Identifier id;
+            try {
+                final PackageURL purl = PackageURLBuilder.aPackageURL().withType("maven").withNamespace(originalGroupID)
+                        .withName(originalArtifactID).withVersion(version).build();
+                id = new PurlIdentifier(purl, Confidence.HIGH);
+            } catch (MalformedPackageURLException ex) {
+                final String gav = String.format("%s:%s:%s", originalGroupID, originalArtifactID, version);
+                LOGGER.debug("Error building package url for " + gav + "; using generic identifier instead.", ex);
+                id = new GenericIdentifier("maven:" + gav, Confidence.HIGH);
+            }
+            dependency.addSoftwareIdentifier(id);
         }
 
         // org name
@@ -760,9 +783,6 @@ public class JarAnalyzer extends AbstractFileTypeAnalyzer {
                 }
                 if (value.startsWith("git@github.com:")) {
                     value = value.substring(15);
-                }
-                if (value.endsWith(".git")) {
-                    value = value.substring(0, value.length() - 4);
                 }
                 if (IGNORE_VALUES.contains(value)) {
                     continue;
