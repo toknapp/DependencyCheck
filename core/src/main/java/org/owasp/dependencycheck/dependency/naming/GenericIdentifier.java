@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2012 Jeremy Long. All Rights Reserved.
+ * Copyright (c) 2019 Jeremy Long. All Rights Reserved.
  */
 package org.owasp.dependencycheck.dependency.naming;
 
@@ -30,6 +30,11 @@ import org.owasp.dependencycheck.dependency.Confidence;
  */
 @ThreadSafe
 public class GenericIdentifier implements Identifier {
+
+    /**
+     * The serial version UID for serialization.
+     */
+    private static final long serialVersionUID = 8683243972735598200L;
 
     /**
      * The confidence that this is the correct identifier.

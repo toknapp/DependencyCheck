@@ -200,9 +200,10 @@ public class NodeAuditAnalyzer extends AbstractNpmAnalyzer {
                 /*
                  * Create a single vulnerable software object - these do not use CPEs unlike the NVD.
                  */
-                VulnerableSoftwareBuilder builder = new VulnerableSoftwareBuilder();
+                final VulnerableSoftwareBuilder builder = new VulnerableSoftwareBuilder();
                 //< 3.1.3  || >= 4.0.0 <4.1.1
-                builder.part(Part.APPLICATION).product(advisory.getModuleName().replace(" ","_")).version(advisory.getVulnerableVersions().replace(" ", ""));
+                builder.part(Part.APPLICATION).product(advisory.getModuleName().replace(" ", "_"))
+                        .version(advisory.getVulnerableVersions().replace(" ", ""));
                 final VulnerableSoftware vs = builder.build();
                 vuln.setVulnerableSoftware(new HashSet<>(Arrays.asList(vs)));
 

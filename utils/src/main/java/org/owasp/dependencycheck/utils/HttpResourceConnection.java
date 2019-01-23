@@ -22,10 +22,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import static java.lang.String.format;
 import java.net.HttpURLConnection;
 import java.net.URISyntaxException;
@@ -33,7 +31,6 @@ import java.net.URL;
 import java.security.InvalidAlgorithmParameterException;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
-import org.apache.commons.io.IOUtils;
 
 /**
  * A utility to download files from the Internet.
@@ -157,6 +154,14 @@ public class HttpResourceConnection implements AutoCloseable {
         }
     }
 
+    /**
+     * Obtains the HTTP URL Connection.
+     *
+     * @param url the URL
+     * @return the HTTP URL Connection
+     * @throws DownloadFailedException thrown if there is an error creating the
+     * HTTP URL Connection
+     */
     private HttpURLConnection obtainConnection(URL url) throws DownloadFailedException {
         HttpURLConnection conn = null;
         try {

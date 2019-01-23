@@ -95,6 +95,7 @@
             19. amazon_aws_project is a drupal utility (#1290)
             20. google android should not be flagged for the base library
             21. ws_project is a node websocket client (#1535)
+            22. r_project is the r programming language
         ]]></notes>
         <filePath regex="true">.*(\.(dll|jar|ear|war|pom|nupkg|nuspec|aar)|pom\.xml|package.json|packages.config)$</filePath>
         <cpe>cpe:/a:sandbox:sandbox</cpe>
@@ -122,6 +123,7 @@
         <cpe>cpe:/a:amazon_aws_project:amazon_aws</cpe>
         <cpe>cpe:/a:google:android</cpe>
         <cpe>cpe:/a:ws_project:ws</cpe>
+        <cpe>cpe:/a:r_project:r</cpe>
     </suppress>
     <suppress base="true">
         <notes><![CDATA[

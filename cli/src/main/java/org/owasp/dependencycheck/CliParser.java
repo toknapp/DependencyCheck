@@ -142,7 +142,7 @@ public final class CliParser {
                 final String msg = "If one of the CVE URLs is specified they must all be specified; please add the missing CVE URL.";
                 throw new ParseException(msg);
             }
-            if (line.hasOption((ARGUMENT.SYM_LINK_DEPTH))) {
+            if (line.hasOption(ARGUMENT.SYM_LINK_DEPTH)) {
                 try {
                     final int i = Integer.parseInt(line.getOptionValue(ARGUMENT.SYM_LINK_DEPTH));
                     if (i < 0) {
@@ -1013,10 +1013,8 @@ public final class CliParser {
      *
      * @return the proxy server
      */
-    @SuppressWarnings("deprecation")
     public String getProxyServer() {
-        String server = line.getOptionValue(ARGUMENT.PROXY_SERVER);
-        return server;
+        return line.getOptionValue(ARGUMENT.PROXY_SERVER);
     }
 
     /**

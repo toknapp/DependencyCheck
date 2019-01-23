@@ -726,7 +726,7 @@ Copyright (c) 2012 - Jeremy Long
                 <artifactId>maven-pmd-plugin</artifactId>
                 <version>${reporting.pmd-plugin.version}</version>
                 <configuration>
-                    <targetJdk>1.6</targetJdk>
+                    <targetJdk>1.8</targetJdk>
                     <linkXRef>true</linkXRef>
                     <sourceEncoding>utf-8</sourceEncoding>
                     <excludes>

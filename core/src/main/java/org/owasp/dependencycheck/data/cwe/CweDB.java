@@ -85,8 +85,8 @@ public final class CweDB {
         }
         return null;
     }
-    
-        /**
+
+    /**
      * <p>
      * Returns the full CWE name from the CWE ID.</p>
      *
@@ -95,7 +95,7 @@ public final class CweDB {
      */
     public static synchronized String getFullName(String cweId) {
         final String name = getName(cweId);
-        if (name !=null) {
+        if (name != null) {
             return cweId + " " + name;
         }
         return cweId;

@@ -60,11 +60,11 @@ public class JarAnalyzerTest extends BaseTest {
         file = BaseTest.getResourceAsFile(this, "dwr.jar");
         result = new Dependency(file);
         instance.analyze(result, null);
-        assertEquals(JarAnalyzer.DEPENDENCY_ECOSYSTEM,result.getEcosystem());
+        assertEquals(JarAnalyzer.DEPENDENCY_ECOSYSTEM, result.getEcosystem());
         boolean found = false;
         for (Evidence e : result.getEvidence(EvidenceType.VENDOR)) {
             if (e.getName().equals("url")) {
-                assertEquals("Project url was not as expected in dwr.jar", e.getValue(), "http://getahead.ltd.uk/dwr");
+                assertEquals("Project url was not as expected in dwr.jar", "http://getahead.ltd.uk/dwr", e.getValue());
                 found = true;
                 break;
             }
@@ -109,7 +109,7 @@ public class JarAnalyzerTest extends BaseTest {
         file = BaseTest.getResourceAsFile(this, "org.mortbay.jmx.jar");
         result = new Dependency(file);
         instance.analyze(result, null);
-        assertEquals("org.mortbar.jmx.jar has version evidence?", result.getEvidence(EvidenceType.VERSION).size(), 0);
+        assertEquals("org.mortbar.jmx.jar has version evidence?", 0, result.getEvidence(EvidenceType.VERSION).size());
     }
 
     /**

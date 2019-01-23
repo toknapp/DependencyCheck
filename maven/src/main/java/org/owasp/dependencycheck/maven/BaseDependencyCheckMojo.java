@@ -18,7 +18,6 @@
 package org.owasp.dependencycheck.maven;
 
 import com.github.packageurl.MalformedPackageURLException;
-import com.github.packageurl.PackageURL;
 import com.github.packageurl.PackageURL.StandardTypes;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -1088,7 +1087,8 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
                 d.setEcosystem(JarAnalyzer.DEPENDENCY_ECOSYSTEM);
                 Identifier id;
                 try {
-                    id = new PurlIdentifier(StandardTypes.MAVEN, artifact.getGroupId(),artifact.getArtifactId(),artifact.getVersion(),Confidence.HIGHEST);
+                    id = new PurlIdentifier(StandardTypes.MAVEN, artifact.getGroupId(),
+                            artifact.getArtifactId(), artifact.getVersion(), Confidence.HIGHEST);
                 } catch (MalformedPackageURLException ex) {
                     getLog().debug("Unable to create PackageURL object:" + key);
                     id = new GenericIdentifier("maven:" + key, Confidence.HIGHEST);

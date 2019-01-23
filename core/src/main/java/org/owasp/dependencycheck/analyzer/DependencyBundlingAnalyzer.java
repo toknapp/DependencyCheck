@@ -26,7 +26,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.concurrent.ThreadSafe;
 import org.owasp.dependencycheck.dependency.Dependency;
-import org.owasp.dependencycheck.dependency.naming.GenericIdentifier;
 import org.owasp.dependencycheck.dependency.Vulnerability;
 import org.owasp.dependencycheck.dependency.naming.Identifier;
 import org.owasp.dependencycheck.utils.DependencyVersion;
@@ -262,8 +261,8 @@ public class DependencyBundlingAnalyzer extends AbstractDependencyComparingAnaly
             return false;
         }
         boolean matches = false;
-        int cpeCount1 = dependency1.getVulnerableSoftwareIdentifiers().size();
-        int cpeCount2 = dependency2.getVulnerableSoftwareIdentifiers().size();
+        final int cpeCount1 = dependency1.getVulnerableSoftwareIdentifiers().size();
+        final int cpeCount2 = dependency2.getVulnerableSoftwareIdentifiers().size();
         if (cpeCount1 > 0 && cpeCount1 == cpeCount2) {
             for (Identifier i : dependency1.getVulnerableSoftwareIdentifiers()) {
                 matches |= dependency2.getVulnerableSoftwareIdentifiers().contains(i);
@@ -351,17 +350,17 @@ public class DependencyBundlingAnalyzer extends AbstractDependencyComparingAnaly
             returnVal = true;
         } else if (!left.isVirtual() && right.isVirtual()) {
             returnVal = false;
-        } else if (!rightName.matches(".*\\.(tar|tgz|gz|zip|ear|war).+") && leftName.matches(".*\\.(tar|tgz|gz|zip|ear|war).+")
-                || rightName.contains("core") && !leftName.contains("core")
-                || rightName.contains("kernel") && !leftName.contains("kernel")
-                || rightName.contains("akka-stream") && !leftName.contains("akka-stream")
-                || rightName.contains("netty-transport") && !leftName.contains("netty-transport")) {
+        } else if ((!rightName.matches(".*\\.(tar|tgz|gz|zip|ear|war).+") && leftName.matches(".*\\.(tar|tgz|gz|zip|ear|war).+"))
+                || (rightName.contains("core") && !leftName.contains("core"))
+                || (rightName.contains("kernel") && !leftName.contains("kernel"))
+                || (rightName.contains("akka-stream") && !leftName.contains("akka-stream"))
+                || (rightName.contains("netty-transport") && !leftName.contains("netty-transport"))) {
             returnVal = false;
-        } else if (rightName.matches(".*\\.(tar|tgz|gz|zip|ear|war).+") && !leftName.matches(".*\\.(tar|tgz|gz|zip|ear|war).+")
-                || !rightName.contains("core") && leftName.contains("core")
-                || !rightName.contains("kernel") && leftName.contains("kernel")
-                || !rightName.contains("akka-stream") && leftName.contains("akka-stream")
-                || !rightName.contains("netty-transport") && leftName.contains("netty-transport")) {
+        } else if ((rightName.matches(".*\\.(tar|tgz|gz|zip|ear|war).+") && !leftName.matches(".*\\.(tar|tgz|gz|zip|ear|war).+"))
+                || (!rightName.contains("core") && leftName.contains("core"))
+                || (!rightName.contains("kernel") && leftName.contains("kernel"))
+                || (!rightName.contains("akka-stream") && leftName.contains("akka-stream"))
+                || (!rightName.contains("netty-transport") && leftName.contains("netty-transport"))) {
             returnVal = true;
         } else {
             /*

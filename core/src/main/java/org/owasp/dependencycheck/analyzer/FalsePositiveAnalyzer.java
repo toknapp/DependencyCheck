@@ -281,16 +281,16 @@ public class FalsePositiveAnalyzer extends AbstractAnalyzer {
         for (Identifier i : dependency.getVulnerableSoftwareIdentifiers()) {
             //TODO move this startsWith expression to the base suppression file
             if (i instanceof CpeIdentifier) {
-                CpeIdentifier cpeId = (CpeIdentifier) i;
-                Cpe cpe = cpeId.getCpe();
-                if (cpe.getProduct().matches(".*c\\+\\+.*")
+                final CpeIdentifier cpeId = (CpeIdentifier) i;
+                final Cpe cpe = cpeId.getCpe();
+                if ((cpe.getProduct().matches(".*c\\+\\+.*")
                         || ("file".equals(cpe.getVendor()) && "file".equals(cpe.getProduct()))
                         || ("mozilla".equals(cpe.getVendor()) && "mozilla".equals(cpe.getProduct()))
                         || ("cvs".equals(cpe.getVendor()) && "cvs".equals(cpe.getProduct()))
                         || ("ftp".equals(cpe.getVendor()) && "ftp".equals(cpe.getProduct()))
                         || ("tcp".equals(cpe.getVendor()) && "tcp".equals(cpe.getProduct()))
                         || ("ssh".equals(cpe.getVendor()) && "ssh".equals(cpe.getProduct()))
-                        || ("lookup".equals(cpe.getVendor()) && "lookup".equals(cpe.getProduct()))
+                        || ("lookup".equals(cpe.getVendor()) && "lookup".equals(cpe.getProduct())))
                         && (dependency.getFileName().toLowerCase().endsWith(".jar")
                         || dependency.getFileName().toLowerCase().endsWith("pom.xml")
                         || dependency.getFileName().toLowerCase().endsWith(".dll")
@@ -368,7 +368,7 @@ public class FalsePositiveAnalyzer extends AbstractAnalyzer {
                     .filter((i) -> (i instanceof CpeIdentifier))
                     .map(i -> (CpeIdentifier) i)
                     .forEach((i) -> {
-                        Cpe cpe = i.getCpe();
+                        final Cpe cpe = i.getCpe();
                         if ("apache".equals(cpe.getVendor()) && "axis".equals(cpe.getProduct())) {
                             identifiersToRemove.add(i);
                         }
@@ -378,7 +378,7 @@ public class FalsePositiveAnalyzer extends AbstractAnalyzer {
                     .filter((i) -> (i instanceof CpeIdentifier))
                     .map(i -> (CpeIdentifier) i)
                     .forEach((i) -> {
-                        Cpe cpe = i.getCpe();
+                        final Cpe cpe = i.getCpe();
                         if ("apache".equals(cpe.getVendor()) && "axis2".equals(cpe.getProduct())) {
                             identifiersToRemove.add(i);
                         }
@@ -398,21 +398,27 @@ public class FalsePositiveAnalyzer extends AbstractAnalyzer {
      * @param dependency the dependency being analyzed
      */
     private void addFalseNegativeCPEs(Dependency dependency) {
-        CpeBuilder builder = new CpeBuilder();
+        final CpeBuilder builder = new CpeBuilder();
         //TODO move this to the hint analyzer
         dependency.getVulnerableSoftwareIdentifiers().stream()
                 .filter((i) -> (i instanceof CpeIdentifier))
                 .map(i -> (CpeIdentifier) i)
                 .forEach((i) -> {
-                    Cpe cpe = i.getCpe();
-                    if ((("oracle".equals(cpe.getVendor()) && ("opensso".equals(cpe.getProduct()) || "opensso_enterprise".equals(cpe.getProduct()))))
-                            || ("sun".equals(cpe.getVendor()) && ("opensso".equals(cpe.getProduct()) || "opensso_enterprise".equals(cpe.getProduct())))) {
+                    final Cpe cpe = i.getCpe();
+                    if ((("oracle".equals(cpe.getVendor())
+                            && ("opensso".equals(cpe.getProduct()) || "opensso_enterprise".equals(cpe.getProduct()))))
+                            || ("sun".equals(cpe.getVendor())
+                            && ("opensso".equals(cpe.getProduct()) || "opensso_enterprise".equals(cpe.getProduct())))) {
 
                         try {
-                            final Cpe newCpe1 = builder.part(Part.APPLICATION).vendor("sun").product("opensso_enterprise").version(cpe.getVersion()).build();
-                            final Cpe newCpe2 = builder.part(Part.APPLICATION).vendor("oracle").product("opensso_enterprise").version(cpe.getVersion()).build();
-                            final Cpe newCpe3 = builder.part(Part.APPLICATION).vendor("sun").product("opensso").version(cpe.getVersion()).build();
-                            final Cpe newCpe4 = builder.part(Part.APPLICATION).vendor("oracle").product("opensso").version(cpe.getVersion()).build();
+                            final Cpe newCpe1 = builder.part(Part.APPLICATION).vendor("sun")
+                                    .product("opensso_enterprise").version(cpe.getVersion()).build();
+                            final Cpe newCpe2 = builder.part(Part.APPLICATION).vendor("oracle")
+                                    .product("opensso_enterprise").version(cpe.getVersion()).build();
+                            final Cpe newCpe3 = builder.part(Part.APPLICATION).vendor("sun")
+                                    .product("opensso").version(cpe.getVersion()).build();
+                            final Cpe newCpe4 = builder.part(Part.APPLICATION).vendor("oracle")
+                                    .product("opensso").version(cpe.getVersion()).build();
                             final CpeIdentifier newCpeId1 = new CpeIdentifier(newCpe1, i.getConfidence());
                             final CpeIdentifier newCpeId2 = new CpeIdentifier(newCpe2, i.getConfidence());
                             final CpeIdentifier newCpeId3 = new CpeIdentifier(newCpe3, i.getConfidence());
@@ -428,7 +434,8 @@ public class FalsePositiveAnalyzer extends AbstractAnalyzer {
                     }
                     if ("apache".equals(cpe.getVendor()) && "santuario_xml_security_for_java".equals(cpe.getProduct())) {
                         try {
-                            final Cpe newCpe1 = builder.part(Part.APPLICATION).vendor("apache").product("xml_security_for_java").version(cpe.getVersion()).build();
+                            final Cpe newCpe1 = builder.part(Part.APPLICATION).vendor("apache")
+                                    .product("xml_security_for_java").version(cpe.getVersion()).build();
                             final CpeIdentifier newCpeId1 = new CpeIdentifier(newCpe1, i.getConfidence());
                             dependency.addVulnerableSoftwareIdentifier(newCpeId1);
                         } catch (CpeValidationException ex) {
@@ -455,7 +462,7 @@ public class FalsePositiveAnalyzer extends AbstractAnalyzer {
                 final Dependency[] dependencies = engine.getDependencies();
                 final Dependency parent = findDependency(parentPath, dependencies);
                 if (parent != null) {
-                    boolean remove = dependency.getVulnerableSoftwareIdentifiers().stream()
+                    final boolean remove = dependency.getVulnerableSoftwareIdentifiers().stream()
                             .filter((i) -> (i instanceof CpeIdentifier))
                             .map(i -> (CpeIdentifier) i)
                             .anyMatch(i -> {

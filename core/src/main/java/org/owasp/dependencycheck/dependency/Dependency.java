@@ -19,7 +19,6 @@ package org.owasp.dependencycheck.dependency;
 
 import com.github.packageurl.MalformedPackageURLException;
 import com.github.packageurl.PackageURL;
-import org.owasp.dependencycheck.dependency.naming.GenericIdentifier;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.owasp.dependencycheck.data.nexus.MavenArtifact;
@@ -56,7 +55,7 @@ public class Dependency extends EvidenceCollection implements Serializable {
     /**
      * The serial version UID for serialization.
      */
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 7388854637023297752L;
     /**
      * The logger.
      */
@@ -505,7 +504,7 @@ public class Dependency extends EvidenceCollection implements Serializable {
             synchronized (this) {
                 for (Identifier i : this.softwareIdentifiers) {
                     if (i instanceof PurlIdentifier) {
-                        PurlIdentifier id = (PurlIdentifier) i;
+                        final PurlIdentifier id = (PurlIdentifier) i;
                         if (mavenArtifact.getArtifactId().equals(id.getName())
                                 && mavenArtifact.getGroupId().equals(id.getNamespace())) {
                             found = true;
@@ -523,8 +522,9 @@ public class Dependency extends EvidenceCollection implements Serializable {
         if (!found && mavenArtifact.getGroupId() != null && mavenArtifact.getArtifactId() != null && mavenArtifact.getVersion() != null) {
             try {
                 LOGGER.debug("Adding new maven identifier {}", mavenArtifact);
-                PackageURL p = new PackageURL("maven", mavenArtifact.getGroupId(), mavenArtifact.getArtifactId(), mavenArtifact.getVersion(), null, null);
-                PurlIdentifier id = new PurlIdentifier(p, Confidence.HIGHEST);
+                final PackageURL p = new PackageURL("maven", mavenArtifact.getGroupId(),
+                        mavenArtifact.getArtifactId(), mavenArtifact.getVersion(), null, null);
+                final PurlIdentifier id = new PurlIdentifier(p, Confidence.HIGHEST);
                 this.addSoftwareIdentifier(id);
             } catch (MalformedPackageURLException ex) {
                 throw new RuntimeException(ex);

@@ -53,10 +53,7 @@ import org.owasp.dependencycheck.dependency.Confidence;
 import org.owasp.dependencycheck.dependency.Dependency;
 import org.owasp.dependencycheck.dependency.Evidence;
 import org.owasp.dependencycheck.dependency.EvidenceType;
-import org.owasp.dependencycheck.dependency.naming.GenericIdentifier;
-import org.owasp.dependencycheck.dependency.VulnerableSoftware;
 import org.owasp.dependencycheck.dependency.naming.CpeIdentifier;
-import org.owasp.dependencycheck.dependency.naming.Identifier;
 import org.owasp.dependencycheck.exception.InitializationException;
 import org.owasp.dependencycheck.utils.DependencyVersion;
 import org.owasp.dependencycheck.utils.DependencyVersionUtil;
@@ -65,8 +62,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import us.springett.parsers.cpe.Cpe;
 import us.springett.parsers.cpe.CpeBuilder;
-import us.springett.parsers.cpe.CpeParser;
-import us.springett.parsers.cpe.exceptions.CpeParsingException;
 import us.springett.parsers.cpe.exceptions.CpeValidationException;
 import us.springett.parsers.cpe.values.Part;
 
@@ -117,14 +112,16 @@ public class CPEAnalyzer extends AbstractAnalyzer {
      * The URL to search the NVD CVE data at NIST. This is used by calling:
      * <pre>String.format(NVD_SEARCH_URL, vendor, product, version);</pre>
      */
-    public static final String NVD_SEARCH_URL = "https://nvd.nist.gov/vuln/search/results?form_type=Advanced&results_type=overview&search_type=all&cpe_vendor=cpe%%3A%%2F%%3A%1$s&cpe_product=cpe%%3A%%2F%%3A%1$s%%3A%2$s&cpe_version=cpe%%3A%%2F%%3A%1$s%%3A%2$s%%3A%3$s";
-    //public static final String NVD_SEARCH_URL = "https://nvd.nist.gov/vuln/search/results?form_type=Advanced&results_type=overview&search_type=all&cpe_vendor=cpe%3A%2F%3Aapache&cpe_product=cpe%3A%2F%3Aapache%3Astruts&cpe_version=cpe%3A%2F%3Aapache%3Astruts%3A2.1.2";
-    //public static final String NVD_SEARCH_URL = "https://nvd.nist.gov/products/cpe/search/results?&orderBy=CPEURI&status=FINAL&namingFormat=2.3&keyword=%s";
+    public static final String NVD_SEARCH_URL = "https://nvd.nist.gov/vuln/search/results?form_type=Advanced&"
+            + "results_type=overview&search_type=all&cpe_vendor=cpe%%3A%%2F%%3A%1$s&cpe_product=cpe%%3A%%2F%%3A%1$s%%3A%2$s&"
+            + "cpe_version=cpe%%3A%%2F%%3A%1$s%%3A%2$s%%3A%3$s";
+
     /**
      * The URL to search the NVD CVE data at NIST. This is used by calling:
      * <pre>String.format(NVD_SEARCH_URL, vendor, product);</pre>
      */
-    public static final String NVD_SEARCH_BROAD_URL = "https://nvd.nist.gov/vuln/search/results?form_type=Advanced&results_type=overview&search_type=all&cpe_vendor=cpe%%3A%%2F%%3A%1$s&cpe_product=cpe%%3A%%2F%%3A%1$s%%3A%2$s";
+    public static final String NVD_SEARCH_BROAD_URL = "https://nvd.nist.gov/vuln/search/results?form_type=Advanced&"
+            + "results_type=overview&search_type=all&cpe_vendor=cpe%%3A%%2F%%3A%1$s&cpe_product=cpe%%3A%%2F%%3A%1$s%%3A%2$s";
     /**
      * The CPE in memory index.
      */
@@ -520,6 +517,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
      * @param text the text to search for
      * @return whether or not the EvidenceCollection contains the string
      */
+    @SuppressWarnings("StringSplitter")
     private boolean collectionContainsString(Set<Evidence> evidence, String text) {
         //TODO - likely need to change the split... not sure if this will work for CPE with special chars
         if (text == null) {
@@ -646,7 +644,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
         }
 
         if (dependency.getVersion() != null && !dependency.getVersion().isEmpty()) {
-            DependencyVersion depVersion = new DependencyVersion(dependency.getVersion());
+            final DependencyVersion depVersion = new DependencyVersion(dependency.getVersion());
             if (depVersion.getVersionParts().size() > 0) {
                 cpeBuilder.part(Part.APPLICATION).vendor(vendor).product(product);
                 //Only semantic versions used in NVD and evidence may contain an update version
@@ -654,7 +652,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                         && depVersion.getVersionParts().get(3).matches("^(v|beta|alpha|u|rc|m|20\\d\\d).*$")) {
 
                     cpeBuilder.version(StringUtils.join(depVersion.getVersionParts().subList(0, 3), "."));
-                    //when written - no update versions in the NVD start with v### - they all strip the v off 
+                    //when written - no update versions in the NVD start with v### - they all strip the v off
                     if (depVersion.getVersionParts().get(3).matches("^v\\d.*$")) {
                         cpeBuilder.update(depVersion.getVersionParts().get(3).substring(1));
                     } else {
@@ -664,10 +662,10 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                     cpeBuilder.version(depVersion.toString());
                 }
                 try {
-                    Cpe depCpe = cpeBuilder.build();
+                    final Cpe depCpe = cpeBuilder.build();
                     final String url = String.format(NVD_SEARCH_URL, URLEncoder.encode(vendor, UTF8),
                             URLEncoder.encode(product, UTF8), URLEncoder.encode(depCpe.getVersion(), UTF8));
-                    final IdentifierMatch match = new IdentifierMatch(depCpe, null, IdentifierConfidence.EXACT_MATCH, currentConfidence);
+                    final IdentifierMatch match = new IdentifierMatch(depCpe, url, IdentifierConfidence.EXACT_MATCH, currentConfidence);
                     collected.add(match);
                 } catch (CpeValidationException ex) {
                     throw new AnalysisException(String.format("Unable to create a CPE for %s:%s:%s", vendor, product, bestGuess.toString()));
@@ -742,7 +740,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                 && bestGuess.getVersionParts().get(3).matches("^(v|beta|alpha|u|rc|m|20\\d\\d).*$")) {
 
             cpeBuilder.version(StringUtils.join(bestGuess.getVersionParts().subList(0, 3), "."));
-            //when written - no update versions in the NVD start with v### - they all strip the v off 
+            //when written - no update versions in the NVD start with v### - they all strip the v off
             if (bestGuess.getVersionParts().get(3).matches("^v\\d.*$")) {
                 cpeBuilder.update(bestGuess.getVersionParts().get(3).substring(1));
             } else {
@@ -849,8 +847,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
         /**
          * Constructs an IdentifierMatch.
          *
-         * @param type the type of identifier (such as CPE)
-         * @param value the value of the identifier
+         * @param cpe the CPE value for the match
          * @param url the URL of the identifier
          * @param identifierConfidence the confidence in the identifier: best
          * guess or exact match
@@ -953,7 +950,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
             if (obj == null) {
                 return false;
             }
-            if (getClass() != obj.getClass()) {
+            if (!(obj instanceof IdentifierMatch)) {
                 return false;
             }
             final IdentifierMatch other = (IdentifierMatch) obj;

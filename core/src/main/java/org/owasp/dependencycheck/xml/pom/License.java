@@ -113,7 +113,7 @@ public class License {
         if (obj == null) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
+        if (!(obj instanceof License)) {
             return false;
         }
         final License other = (License) obj;

@@ -25,7 +25,6 @@ import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.owasp.dependencycheck.utils.DependencyVersion;
-import org.owasp.dependencycheck.utils.DependencyVersionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import us.springett.parsers.cpe.Cpe;
@@ -126,7 +125,7 @@ public class VulnerableSoftware extends Cpe implements Serializable {
     @Override
     public int compareTo(Object o) {
         if (o instanceof VulnerableSoftware) {
-            VulnerableSoftware other = (VulnerableSoftware) o;
+            final VulnerableSoftware other = (VulnerableSoftware) o;
             return new CompareToBuilder()
                     .appendSuper(super.compareTo(other))
                     .append(versionStartIncluding, other.versionStartIncluding)
@@ -162,10 +161,10 @@ public class VulnerableSoftware extends Cpe implements Serializable {
         if (obj == this) {
             return true;
         }
-        if (obj.getClass() != getClass()) {
+        if (!(obj instanceof VulnerableSoftware)) {
             return false;
         }
-        VulnerableSoftware rhs = (VulnerableSoftware) obj;
+        final VulnerableSoftware rhs = (VulnerableSoftware) obj;
         return new EqualsBuilder()
                 .appendSuper(super.equals(obj))
                 .append(versionEndExcluding, rhs.versionEndExcluding)
@@ -255,24 +254,24 @@ public class VulnerableSoftware extends Cpe implements Serializable {
             return true;
         }
 
-        DependencyVersion target = new DependencyVersion(targetVersion);
+        final DependencyVersion target = new DependencyVersion(targetVersion);
         if (target.getVersionParts().isEmpty()) {
             return false;
         }
         if (result && versionEndExcluding != null && !versionEndExcluding.isEmpty()) {
-            DependencyVersion endExcluding = new DependencyVersion(versionEndExcluding);
+            final DependencyVersion endExcluding = new DependencyVersion(versionEndExcluding);
             result = endExcluding.compareTo(target) > 0;
         }
         if (result && versionStartExcluding != null && !versionStartExcluding.isEmpty()) {
-            DependencyVersion startExcluding = new DependencyVersion(versionStartExcluding);
+            final DependencyVersion startExcluding = new DependencyVersion(versionStartExcluding);
             result = startExcluding.compareTo(target) < 0;
         }
         if (result && versionEndIncluding != null && !versionEndIncluding.isEmpty()) {
-            DependencyVersion endIncluding = new DependencyVersion(versionEndIncluding);
+            final DependencyVersion endIncluding = new DependencyVersion(versionEndIncluding);
             result &= endIncluding.compareTo(target) >= 0;
         }
         if (result && versionStartIncluding != null && !versionStartIncluding.isEmpty()) {
-            DependencyVersion startIncluding = new DependencyVersion(versionStartIncluding);
+            final DependencyVersion startIncluding = new DependencyVersion(versionStartIncluding);
             result &= startIncluding.compareTo(target) <= 0;
         }
         return result;

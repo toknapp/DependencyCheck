@@ -44,7 +44,6 @@ import org.owasp.dependencycheck.data.update.nvd.NvdCveInfo;
 import org.owasp.dependencycheck.data.update.nvd.ProcessTask;
 import org.owasp.dependencycheck.data.update.nvd.UpdateableNvdCve;
 import org.owasp.dependencycheck.utils.DateUtil;
-import org.owasp.dependencycheck.utils.Downloader;
 import org.owasp.dependencycheck.utils.DownloadFailedException;
 import org.owasp.dependencycheck.utils.HttpResourceConnection;
 import org.owasp.dependencycheck.utils.InvalidSettingException;
@@ -252,7 +251,10 @@ public class NvdCveUpdater implements CachedWebDataSource {
         for (NvdCveInfo cve : updateable) {
             if (cve.getNeedsUpdate()) {
                 final DownloadTask call = new DownloadTask(cve, processingExecutorService, cveDb, settings);
-                downloadFutures.add(downloadExecutorService.submit(call));
+final                boolean added = downloadFutures.add(downloadExecutorService.submit(call));
+                if (!added) {
+                    throw new UpdateException("Unable to add the download task for " + cve.getId());
+                }
             }
         }
 
@@ -507,7 +509,7 @@ public class NvdCveUpdater implements CachedWebDataSource {
         public Long call() throws Exception {
             LOGGER.debug("Checking for updates from: {}", url);
             try {
-                HttpResourceConnection resource = new HttpResourceConnection(settings);
+final                HttpResourceConnection resource = new HttpResourceConnection(settings);
                 return resource.getLastModified(new URL(url));
             } finally {
                 settings.cleanup(false);

@@ -141,8 +141,7 @@ public class IndexEntry implements Serializable {
      * </ul>
      * <p>
      * If it is necessary to parse the CPE into more parts (i.e. to include
-     * version and revision) then you should use the
-     * {@link org.owasp.dependencycheck.dependency.VulnerableSoftware#parseName VulnerableSoftware.parseName()}.
+     * version and revision) then you should use the `cpe-parser`.
      *
      * @param cpeName the CPE name
      * @throws UnsupportedEncodingException should never be thrown...
@@ -172,7 +171,7 @@ public class IndexEntry implements Serializable {
         if (obj == null) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
+        if (!(obj instanceof IndexEntry)) {
             return false;
         }
         final IndexEntry other = (IndexEntry) obj;

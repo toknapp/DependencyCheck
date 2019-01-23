@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.security.InvalidAlgorithmParameterException;
 import static java.lang.String.format;
 import org.apache.commons.io.IOUtils;
 
@@ -86,7 +85,7 @@ public final class Downloader {
     public void fetchFile(URL url, File outputPath, boolean useProxy) throws DownloadFailedException {
         try (HttpResourceConnection conn = new HttpResourceConnection(settings, useProxy);
                 OutputStream out = new FileOutputStream(outputPath)) {
-            InputStream in = conn.fetch(url);
+            final InputStream in = conn.fetch(url);
             IOUtils.copy(in, out);
         } catch (IOException ex) {
             final String msg = format("Download failed, unable to copy '%s' to '%s'", url.toString(), outputPath.getAbsolutePath());

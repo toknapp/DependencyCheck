@@ -264,12 +264,12 @@ public class JarAnalyzer extends AbstractFileTypeAnalyzer {
     public void analyzeDependency(Dependency dependency, Engine engine) throws AnalysisException {
         final List<ClassNameInformation> classNames = collectClassNames(dependency);
         final String fileName = dependency.getFileName().toLowerCase();
-        if (classNames.isEmpty()
+        if ((classNames.isEmpty()
                 && (fileName.endsWith("-sources.jar")
                 || fileName.endsWith("-javadoc.jar")
                 || fileName.endsWith("-src.jar")
                 || fileName.endsWith("-doc.jar")
-                || isMacOSMetaDataFile(dependency, engine))
+                || isMacOSMetaDataFile(dependency, engine)))
                 || !isZipFile(dependency)) {
             engine.removeDependency(dependency);
             return;
@@ -497,7 +497,7 @@ public class JarAnalyzer extends AbstractFileTypeAnalyzer {
         final Enumeration<JarEntry> entries = jar.entries();
         while (entries.hasMoreElements()) {
             final JarEntry entry = entries.nextElement();
-            final String entryName = (new File(entry.getName())).getName().toLowerCase();
+            final String entryName = new File(entry.getName()).getName().toLowerCase();
             if (!entry.isDirectory() && "pom.xml".equals(entryName)
                     && entry.getName().toUpperCase().startsWith("META-INF")) {
                 LOGGER.trace("POM Entry found: {}", entry.getName());
@@ -630,10 +630,11 @@ public class JarAnalyzer extends AbstractFileTypeAnalyzer {
         if (addAsIdentifier) {
             Identifier id;
             try {
-                PackageURL purl = PackageURLBuilder.aPackageURL().withType("maven").withNamespace(originalGroupID).withName(originalArtifactID).withVersion(version).build();
+                final PackageURL purl = PackageURLBuilder.aPackageURL().withType("maven").withNamespace(originalGroupID)
+                        .withName(originalArtifactID).withVersion(version).build();
                 id = new PurlIdentifier(purl, Confidence.HIGH);
             } catch (MalformedPackageURLException ex) {
-                String gav = String.format("%s:%s:%s", originalGroupID, originalArtifactID, version);
+                final String gav = String.format("%s:%s:%s", originalGroupID, originalArtifactID, version);
                 LOGGER.debug("Error building package url for " + gav + "; using generic identifier instead.", ex);
                 id = new GenericIdentifier("maven:" + gav, Confidence.HIGH);
             }

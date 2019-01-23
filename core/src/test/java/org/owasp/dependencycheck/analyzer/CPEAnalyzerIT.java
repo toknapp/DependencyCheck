@@ -177,7 +177,11 @@ public class CPEAnalyzerIT extends BaseDBTestCase {
         File file = BaseTest.getResourceAsFile(this, "struts2-core-2.1.2.jar");
         //File file = new File(this.getClass().getClassLoader().getResource("axis2-adb-1.4.1.jar").getPath());
         Dependency struts = new Dependency(file);
-
+        
+        CpeSuppressionAnalyzer suppressionAnalyzer = new CpeSuppressionAnalyzer();
+        suppressionAnalyzer.initialize(getSettings());
+        suppressionAnalyzer.prepare(null);
+        
         FileNameAnalyzer fnAnalyzer = new FileNameAnalyzer();
         fnAnalyzer.analyze(struts, null);
 
@@ -220,12 +224,12 @@ public class CPEAnalyzerIT extends BaseDBTestCase {
             instance.determineCPE(spring3);
             instance.close();
 
-            String expResult = "cpe:2.3:a:apache:struts:2.1.2:*:*:*:*:*:*:*";
-
+            suppressionAnalyzer.analyze(commonValidator, engine);
             commonValidator.getVulnerableSoftwareIdentifiers().forEach((i) -> {
                 fail("Apache Common Validator found an unexpected CPE identifier - " + i.getValue());
             });
-
+            
+            String expResult = "cpe:2.3:a:apache:struts:2.1.2:*:*:*:*:*:*:*";
             assertTrue("Incorrect match size - struts", struts.getVulnerableSoftwareIdentifiers().size() >= 1);
             boolean found = false;
             for (Identifier i : struts.getVulnerableSoftwareIdentifiers()) {
@@ -238,6 +242,7 @@ public class CPEAnalyzerIT extends BaseDBTestCase {
             assertTrue("Incorrect match size - spring3 - " + spring3.getVulnerableSoftwareIdentifiers().size(), spring3.getVulnerableSoftwareIdentifiers().size() >= 1);
 
             jarAnalyzer.close();
+            suppressionAnalyzer.close();
         }
     }
 

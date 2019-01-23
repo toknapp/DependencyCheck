@@ -28,28 +28,17 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import java.util.zip.GZIPInputStream;
 import org.owasp.dependencycheck.data.nvdcve.CveDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.owasp.dependencycheck.data.nvd.json.CVEItem;
-import org.owasp.dependencycheck.data.nvd.json.CpeMatch;
 import org.owasp.dependencycheck.data.nvd.json.CpeMatchStreamCollector;
 import org.owasp.dependencycheck.data.nvd.json.Description;
 import org.owasp.dependencycheck.data.nvd.json.NodeFlatteningCollector;
 import org.owasp.dependencycheck.data.nvd.json.ProblemtypeDatum;
-import org.owasp.dependencycheck.data.nvdcve.DatabaseException;
-import org.owasp.dependencycheck.dependency.VulnerableSoftware;
-import org.owasp.dependencycheck.dependency.VulnerableSoftwareBuilder;
 import org.owasp.dependencycheck.utils.Settings;
-import us.springett.parsers.cpe.Cpe;
-import us.springett.parsers.cpe.CpeParser;
-import us.springett.parsers.cpe.exceptions.CpeParsingException;
-import us.springett.parsers.cpe.exceptions.CpeValidationException;
-import us.springett.parsers.cpe.values.Part;
 
 /**
  * Parser and processor of NVD CVE JSON data feeds.
@@ -63,7 +52,7 @@ public final class NvdCveParser {
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(NvdCveParser.class);
     /**
-     * A reference to the Cve DB.
+     * A reference to the CVE DB.
      */
     private final CveDB cveDB;
     /**
@@ -83,13 +72,18 @@ public final class NvdCveParser {
         this.cveDB = db;
     }
 
+    /**
+     * Parses the NVD JSON file and inserts/updates data into the database.
+     *
+     * @param file the NVD JSON file to parse
+     */
     public void parse(File file) {
         LOGGER.info("Parsing " + file.getName());
         try (InputStream fin = new FileInputStream(file);
                 InputStream in = new GZIPInputStream(fin);
-                InputStreamReader isr = new InputStreamReader(in);
+                InputStreamReader isr = new InputStreamReader(in, UTF_8);
                 JsonReader reader = new JsonReader(isr)) {
-            Gson gson = new GsonBuilder().create();
+            final Gson gson = new GsonBuilder().create();
 
             reader.beginObject();
 
@@ -101,7 +95,6 @@ public final class NvdCveParser {
                 final CVEItem cve = gson.fromJson(reader, CVEItem.class);
 
                 //cve.getCve().getCVEDataMeta().getSTATE();
-
                 if (testCveCpeStartWithFilter(cve)) {
                     cveDB.updateVulnerability(cve);
                 }
@@ -116,7 +109,7 @@ public final class NvdCveParser {
                     }
                 }
                 //contains the affected vendor/product/version - possibly useful for vendor/product/version matching
-                cve.getCve().getAffects();
+                //cve.getCve().getAffects();
 
             }
         } catch (FileNotFoundException ex) {

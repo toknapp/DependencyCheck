@@ -101,6 +101,7 @@ public class MSBuildProjectAnalyzer extends AbstractFileTypeAnalyzer {
     }
 
     @Override
+    @SuppressWarnings("StringSplitter")
     protected void analyzeDependency(Dependency dependency, Engine engine) throws AnalysisException {
         LOGGER.debug("Checking MSBuild project file {}", dependency);
         try {

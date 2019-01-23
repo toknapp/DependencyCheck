@@ -321,7 +321,7 @@ public class App {
             final String tmpBase = include.substring(0, pos);
             final String tmpInclude = include.substring(pos + 1);
             if (tmpInclude.indexOf('*') >= 0 || tmpInclude.indexOf('?') >= 0
-                    || (new File(include)).isFile()) {
+                    || new File(include).isFile()) {
                 baseDir = new File(tmpBase);
                 include = tmpInclude;
             } else {
