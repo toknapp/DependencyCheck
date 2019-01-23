@@ -26,6 +26,11 @@ package org.owasp.dependencycheck.analyzer.exception;
 public class LambdaExceptionWrapper extends RuntimeException {
 
     /**
+     * The serial version UID.
+     */
+    private static final long serialVersionUID = 367437431232631044L;
+
+    /**
      * Wraps an exception.
      *
      * @param ex the exception to wrap

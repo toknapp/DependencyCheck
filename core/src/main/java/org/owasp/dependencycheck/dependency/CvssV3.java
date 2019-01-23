@@ -65,7 +65,23 @@ public class CvssV3 {
      */
     private final String baseSeverity;
 
-    public CvssV3(String attackVector, String attackComplexity, String privilegesRequired, String userInteraction, String scope, String confidentialityImpact, String integrityImpact, String availabilityImpact, float baseScore, String baseSeverity) {
+    /**
+     * Constructs a new CVSS V3 object.
+     *
+     * @param attackVector the attack vector value
+     * @param attackComplexity the attack complexity value
+     * @param privilegesRequired the privileges required value
+     * @param userInteraction the user interaction value
+     * @param scope the scope value
+     * @param confidentialityImpact the confidentiality impact value
+     * @param integrityImpact the integrity impact value
+     * @param availabilityImpact the availability impact value
+     * @param baseScore the base score
+     * @param baseSeverity the base severity
+     */
+    public CvssV3(String attackVector, String attackComplexity, String privilegesRequired,
+            String userInteraction, String scope, String confidentialityImpact, String integrityImpact,
+            String availabilityImpact, float baseScore, String baseSeverity) {
         this.attackVector = attackVector;
         this.attackComplexity = attackComplexity;
         this.privilegesRequired = privilegesRequired;

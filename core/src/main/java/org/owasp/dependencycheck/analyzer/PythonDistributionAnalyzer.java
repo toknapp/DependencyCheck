@@ -189,7 +189,7 @@ public class PythonDistributionAnalyzer extends AbstractFileTypeAnalyzer {
                 final File parent = actualFile.getParentFile();
                 final String parentName = parent.getName();
                 if (parent.isDirectory()
-                        && (metadata && parentName.endsWith(".dist-info")
+                        && ((metadata && parentName.endsWith(".dist-info"))
                         || parentName.endsWith(".egg-info") || "EGG-INFO"
                         .equals(parentName))) {
                     collectWheelMetadata(dependency, actualFile);

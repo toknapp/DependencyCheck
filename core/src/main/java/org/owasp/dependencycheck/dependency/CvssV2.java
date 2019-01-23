@@ -56,7 +56,7 @@ public class CvssV2 {
      * CVSS severity.
      */
     private final String severity;
-    
+
     /**
      * Constructs a new CVSS V2 object.
      *
@@ -143,7 +143,7 @@ public class CvssV2 {
     public String getAvailabilityImpact() {
         return availabilityImpact;
     }
-    
+
     /**
      * Get the value of severity.
      *
@@ -152,7 +152,7 @@ public class CvssV2 {
     public String getSeverity() {
         return severity;
     }
-    
+
     @Override
     public String toString() {
         return String.format("(AV:%s/AC:%s/Au:%s/C:%s/I:%s/A:%s)",

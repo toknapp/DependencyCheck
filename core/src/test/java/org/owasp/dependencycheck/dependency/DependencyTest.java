@@ -70,11 +70,12 @@ public class DependencyTest extends BaseTest {
      */
     @Test
     public void testSetActualFilePath() {
-        String actualFilePath = "file.tar";
+        String expectedPath = "file.tar";
+        String actualPath = "file.tar";
         Dependency instance = new Dependency();
         instance.setSha1sum("non-null value");
-        instance.setActualFilePath(actualFilePath);
-        assertEquals(actualFilePath, instance.getActualFilePath());
+        instance.setActualFilePath(actualPath);
+        assertEquals(expectedPath, instance.getActualFilePath());
     }
 
     /**

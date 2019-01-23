@@ -30,10 +30,12 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 public class ExceptionCollection extends Exception {
+
     /**
-     * The serial version uid.
+     * The serial version UID for serialization.
      */
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -3032674811026089923L;
+
     /**
      * A collection of exceptions.
      */
@@ -69,8 +71,8 @@ public class ExceptionCollection extends Exception {
      * Instantiates a new exception collection.
      *
      * @param exceptions a list of exceptions
-     * @param fatal indicates if any of the exceptions that occurred is fatal - meaning
-     * that no analysis was performed.
+     * @param fatal indicates if any of the exceptions that occurred is fatal -
+     * meaning that no analysis was performed.
      */
     public ExceptionCollection(List<Throwable> exceptions, boolean fatal) {
         super();
@@ -83,8 +85,8 @@ public class ExceptionCollection extends Exception {
      *
      * @param msg the exception message
      * @param exceptions a list of exceptions
-     * @param fatal indicates if any of the exceptions that occurred is fatal - meaning
-     * that no analysis was performed.
+     * @param fatal indicates if any of the exceptions that occurred is fatal -
+     * meaning that no analysis was performed.
      */
     public ExceptionCollection(String msg, List<Throwable> exceptions, boolean fatal) {
         super(msg);

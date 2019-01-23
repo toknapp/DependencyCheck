@@ -64,7 +64,7 @@ public class VulnerableSoftwareBuilder extends CpeBuilder {
      */
     @Override
     public VulnerableSoftware build() throws CpeValidationException {
-        VulnerableSoftware vs = new VulnerableSoftware(getPart(), getVendor(), getProduct(),
+        final VulnerableSoftware vs = new VulnerableSoftware(getPart(), getVendor(), getProduct(),
                 getVersion(), getUpdate(), getEdition(),
                 getLanguage(), getSwEdition(), getTargetSw(), getTargetHw(), getOther(),
                 versionEndExcluding, versionEndIncluding, versionStartExcluding,
@@ -88,7 +88,7 @@ public class VulnerableSoftwareBuilder extends CpeBuilder {
 
     /**
      * The ending range, excluding the specified version, for matching
-     * vulnerable software
+     * vulnerable software.
      *
      * @param versionEndExcluding the version range
      * @return a reference to the builder
@@ -100,7 +100,7 @@ public class VulnerableSoftwareBuilder extends CpeBuilder {
 
     /**
      * The ending range, including the specified version, for matching
-     * vulnerable software
+     * vulnerable software.
      *
      * @param versionEndIncluding the version range
      * @return a reference to the builder
@@ -112,7 +112,7 @@ public class VulnerableSoftwareBuilder extends CpeBuilder {
 
     /**
      * The starting range, excluding the specified version, for matching
-     * vulnerable software
+     * vulnerable software.
      *
      * @param versionStartExcluding the version range
      * @return a reference to the builder
@@ -123,8 +123,8 @@ public class VulnerableSoftwareBuilder extends CpeBuilder {
     }
 
     /**
-     * the starting range, including the specified version, for matching
-     * vulnerable software
+     * The starting range, including the specified version, for matching
+     * vulnerable software.
      *
      * @param versionStartIncluding the version range
      * @return a reference to the builder
@@ -151,157 +151,157 @@ public class VulnerableSoftwareBuilder extends CpeBuilder {
     public VulnerableSoftwareBuilder wfOther(String other) {
         return (VulnerableSoftwareBuilder) super.wfOther(other); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder wfTargetHw(String targetHw) {
         return (VulnerableSoftwareBuilder) super.wfTargetHw(targetHw); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder wfTargetSw(String targetSw) {
         return (VulnerableSoftwareBuilder) super.wfTargetSw(targetSw); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder wfSwEdition(String swEdition) {
         return (VulnerableSoftwareBuilder) super.wfSwEdition(swEdition); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder wfLanguage(String language) {
         return (VulnerableSoftwareBuilder) super.wfLanguage(language); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder wfEdition(String edition) {
         return (VulnerableSoftwareBuilder) super.wfEdition(edition); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder wfUpdate(String update) {
         return (VulnerableSoftwareBuilder) super.wfUpdate(update); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder wfVersion(String version) {
         return (VulnerableSoftwareBuilder) super.wfVersion(version); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder wfProduct(String product) {
         return (VulnerableSoftwareBuilder) super.wfProduct(product); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder wfVendor(String vendor) {
         return (VulnerableSoftwareBuilder) super.wfVendor(vendor); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder other(LogicalValue other) {
         return (VulnerableSoftwareBuilder) super.other(other); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder targetHw(LogicalValue targetHw) {
         return (VulnerableSoftwareBuilder) super.targetHw(targetHw); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder targetSw(LogicalValue targetSw) {
         return (VulnerableSoftwareBuilder) super.targetSw(targetSw); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder swEdition(LogicalValue swEdition) {
         return (VulnerableSoftwareBuilder) super.swEdition(swEdition); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder language(LogicalValue language) {
         return (VulnerableSoftwareBuilder) super.language(language); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder update(LogicalValue update) {
         return (VulnerableSoftwareBuilder) super.update(update); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder version(LogicalValue version) {
         return (VulnerableSoftwareBuilder) super.version(version); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder product(LogicalValue product) {
         return (VulnerableSoftwareBuilder) super.product(product); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder vendor(LogicalValue vendor) {
         return (VulnerableSoftwareBuilder) super.vendor(vendor); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder other(String other) {
         return (VulnerableSoftwareBuilder) super.other(other); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder targetHw(String targetHw) {
         return (VulnerableSoftwareBuilder) super.targetHw(targetHw); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder targetSw(String targetSw) {
         return (VulnerableSoftwareBuilder) super.targetSw(targetSw); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder swEdition(String swEdition) {
         return (VulnerableSoftwareBuilder) super.swEdition(swEdition); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder language(String language) {
         return (VulnerableSoftwareBuilder) super.language(language); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder update(String update) {
         return (VulnerableSoftwareBuilder) super.update(update); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder version(String version) {
         return (VulnerableSoftwareBuilder) super.version(version); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder product(String product) {
         return (VulnerableSoftwareBuilder) super.product(product); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder vendor(String vendor) {
         return (VulnerableSoftwareBuilder) super.vendor(vendor); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder part(String part) throws CpeParsingException {
         return (VulnerableSoftwareBuilder) super.part(part); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder part(Part part) {
         return (VulnerableSoftwareBuilder) super.part(part); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder edition(LogicalValue edition) {
         return (VulnerableSoftwareBuilder) super.edition(edition); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public VulnerableSoftwareBuilder edition(String edition) {
         return (VulnerableSoftwareBuilder) super.edition(edition); //To change body of generated methods, choose Tools | Templates.

@@ -141,6 +141,7 @@ public class NugetconfAnalyzer extends AbstractFileTypeAnalyzer {
      * @throws AnalysisException when there's an exception during analysis
      */
     @Override
+    @SuppressWarnings("StringSplitter")
     public void analyzeDependency(Dependency dependency, Engine engine) throws AnalysisException {
         LOGGER.debug("Checking packages.config file {}", dependency);
         try {

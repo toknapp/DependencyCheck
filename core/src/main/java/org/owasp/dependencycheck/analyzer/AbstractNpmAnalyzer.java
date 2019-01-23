@@ -136,7 +136,8 @@ public abstract class AbstractNpmAnalyzer extends AbstractFileTypeAnalyzer {
 
         Identifier id;
         try {
-            PackageURL purl = PackageURLBuilder.aPackageURL().withType(StandardTypes.NPM).withName(name).withVersion(version).build();
+            final PackageURL purl = PackageURLBuilder.aPackageURL().withType(StandardTypes.NPM)
+                    .withName(name).withVersion(version).build();
             id = new PurlIdentifier(purl, Confidence.HIGHEST);
         } catch (MalformedPackageURLException ex) {
             LOGGER.debug("Unable to generate Purl - using a generic identifier instead " + ex.getMessage());
@@ -284,7 +285,8 @@ public abstract class AbstractNpmAnalyzer extends AbstractFileTypeAnalyzer {
 
             Identifier id;
             try {
-                PackageURL purl = PackageURLBuilder.aPackageURL().withType(StandardTypes.NPM).withName(dependency.getName()).withVersion(version).build();
+                final PackageURL purl = PackageURLBuilder.aPackageURL()
+                        .withType(StandardTypes.NPM).withName(dependency.getName()).withVersion(version).build();
                 id = new PurlIdentifier(purl, Confidence.HIGHEST);
             } catch (MalformedPackageURLException ex) {
                 LOGGER.debug("Unable to generate Purl - using a generic identifier instead " + ex.getMessage());

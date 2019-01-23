@@ -36,7 +36,7 @@ public class ReportTool {
      */
     public String identifierToSuppressionId(Identifier id) {
         if (id instanceof PurlIdentifier) {
-            PurlIdentifier purl = (PurlIdentifier) id;
+            final PurlIdentifier purl = (PurlIdentifier) id;
             return purl.toGav();
         }
         return null;

@@ -87,7 +87,6 @@ public class DownloadTask implements Callable<Future<ProcessTask>> {
         } catch (IOException ex) {
             throw new UpdateException("Unable to create temporary files", ex);
         }
-        
     }
 
     /**

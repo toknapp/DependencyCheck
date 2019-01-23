@@ -30,6 +30,9 @@ import org.owasp.dependencycheck.data.cwe.CweDB;
  */
 public class CweSet {
 
+    /**
+     * The set of CWE entries.
+     */
     private final Set<String> cwes = new HashSet<>();
 
     /**

@@ -49,8 +49,6 @@ import org.owasp.dependencycheck.utils.FileFilterBuilder;
 import org.owasp.dependencycheck.utils.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import us.springett.parsers.cpe.Cpe;
-import us.springett.parsers.cpe.CpeBuilder;
 import us.springett.parsers.cpe.exceptions.CpeValidationException;
 import us.springett.parsers.cpe.values.Part;
 
@@ -376,7 +374,7 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
      * @param nextLine the line to parse
      */
     private void setVulnerabilityName(String parentName, Dependency dependency, Vulnerability vulnerability, String nextLine) {
-        final String advisory = nextLine.substring((ADVISORY.length()));
+        final String advisory = nextLine.substring(ADVISORY.length());
         if (null != vulnerability) {
             vulnerability.setName(advisory);
         }
@@ -394,7 +392,7 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
      * @param nextLine the line to parse
      */
     private void addReferenceToVulnerability(String parentName, Vulnerability vulnerability, String nextLine) {
-        final String url = nextLine.substring(("URL: ").length());
+        final String url = nextLine.substring("URL: ".length());
         if (null != vulnerability) {
             final Reference ref = new Reference();
             ref.setName(vulnerability.getName());
@@ -424,11 +422,11 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
                     LOGGER.debug("Unable to look up vulnerability {}", vulnerability.getName());
                 }
             }
-            if (v != null && (v.getCvssV2()!=null || v.getCvssV3()!=null)) {
-                if (v.getCvssV2()!=null) {
+            if (v != null && (v.getCvssV2() != null || v.getCvssV3() != null)) {
+                if (v.getCvssV2() != null) {
                     vulnerability.setCvssV2(v.getCvssV2());
                 }
-                if (v.getCvssV3()!=null) {
+                if (v.getCvssV3() != null) {
                     vulnerability.setCvssV3(v.getCvssV3());
                 }
             } else {
@@ -453,6 +451,8 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
      * @param gem the gem name
      * @param nextLine the line to parse
      * @return the vulnerability
+     * @throws CpeValidationException thrown if there is an error building the
+     * CPE vulnerability object
      */
     private Vulnerability createVulnerability(String parentName, Dependency dependency, String gem, String nextLine) throws CpeValidationException {
         Vulnerability vulnerability = null;
@@ -464,8 +464,8 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
                     version,
                     Confidence.HIGHEST);
             vulnerability = new Vulnerability(); // don't add to dependency until we have name set later
-            VulnerableSoftwareBuilder builder = new VulnerableSoftwareBuilder();
-            VulnerableSoftware vs = builder.part(Part.APPLICATION)
+            final VulnerableSoftwareBuilder builder = new VulnerableSoftwareBuilder();
+            final VulnerableSoftware vs = builder.part(Part.APPLICATION)
                     .vendor(gem)
                     .product(String.format("%s_project", gem))
                     .version(version).build();

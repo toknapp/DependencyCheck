@@ -29,17 +29,31 @@ import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 /**
+ * Used to flatten a hierarchical list of nodes with children.
  *
  * @author Jeremy Long
  */
 public class NodeFlatteningCollector implements Collector<Node, ArrayList<Node>, Stream<Node>> {
 
+    /**
+     * Flattens the hierarchical list of nodes.
+     *
+     * @param node the node with children to flatten
+     * @return the flattened list of nodes
+     */
     private List<Node> flatten(Node node) {
-        List<Node> result = new ArrayList<>();
+        final List<Node> result = new ArrayList<>();
         result.add(node);
         return flatten(result, node.getChildren());
     }
 
+    /**
+     * Flattens the hierarchical list of nodes.
+     *
+     * @param result the results
+     * @param nodes the nodes
+     * @return the flattened list of nodes
+     */
     private List<Node> flatten(List<Node> result, List<Node> nodes) {
         nodes.stream().forEach(n -> {
             flatten(result, n.getChildren());

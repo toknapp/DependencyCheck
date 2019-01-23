@@ -18,7 +18,6 @@
 package org.owasp.dependencycheck.maven;
 
 import com.github.packageurl.MalformedPackageURLException;
-import com.github.packageurl.PackageURL;
 import com.github.packageurl.PackageURL.StandardTypes;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;

@@ -37,7 +37,7 @@ class EvidenceCollection implements Serializable {
     /**
      * The serial version UID for serialization.
      */
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 867580958972090027L;
     /**
      * A collection of vendor evidence.
      */
