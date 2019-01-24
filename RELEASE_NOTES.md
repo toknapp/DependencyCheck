@@ -9,7 +9,7 @@ Please see the [dependency-check google group](https://groups.google.com/forum/#
 - All previously deprecated arguments to the plugins and CLI have been removed.
 - .NET core is now used instead of mono
 - The NVD CVE data import now uses the JSON data feeds instead of the XML data feeds.
-- For build pliugin developers using the core engine the identifiers have been drastically changed.
+- For build plugin developers using the core engine the identifiers have been drastically changed.
 
 ## [Version 4.0.2](https://github.com/jeremylong/DependencyCheck/releases/tag/v4.0.2) (2019-01-01)
 

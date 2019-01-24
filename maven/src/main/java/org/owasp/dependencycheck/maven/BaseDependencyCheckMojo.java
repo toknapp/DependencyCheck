@@ -1642,3 +1642,4 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
 
     //</editor-fold>
 }
+
