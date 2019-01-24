@@ -100,6 +100,8 @@
             24. finder is drupal plugin (#1626)
             25. archiver project is a golang module (#1627)
             26. r_project is the r programming language
+            27. r_project is the r programming language
+            28. cpe:/a:jwt_project:jwt is a php library (#1697)
         ]]></notes>
         <filePath regex="true">.*(\.(dll|jar|ear|war|pom|nupkg|nuspec|aar)|pom\.xml|package.json|packages.config)$</filePath>
         <cpe>cpe:/a:sandbox:sandbox</cpe>
@@ -132,6 +134,7 @@
         <cpe>cpe:/a:finder_project:finder</cpe>
         <cpe>cpe:/a:archiver_project:archiver</cpe>
         <cpe>cpe:/a:r_project:r</cpe>
+        <cpe>cpe:/a:jwt_project:jwt</cpe>
     </suppress>
     <suppress base="true">
         <notes><![CDATA[
