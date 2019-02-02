@@ -1,5 +1,4 @@
 language: java
-group: deprecated-2017Q4
 
 env:
   global:
