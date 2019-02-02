@@ -225,7 +225,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
         this.cpe = CpeMemoryIndex.getInstance();
         try {
             final long creationStart = System.currentTimeMillis();
-            cpe.open(cve);
+            cpe.open(cve, this.getSettings());
             final long creationSeconds = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - creationStart);
             LOGGER.info("Created CPE Index ({} seconds)", creationSeconds);
         } catch (IndexException ex) {
@@ -257,18 +257,11 @@ public class CPEAnalyzer extends AbstractAnalyzer {
      * @throws AnalysisException thrown if the suppression rules failed
      */
     protected void determineCPE(Dependency dependency) throws CorruptIndexException, IOException, ParseException, AnalysisException {
-        Map<String, MutableInt> vendors = new HashMap<>();
-        Map<String, MutableInt> products = new HashMap<>();
-        Set<Integer> previouslyFound = new HashSet<>();
+        final Map<String, MutableInt> vendors = new HashMap<>();
+        final Map<String, MutableInt> products = new HashMap<>();
+        final Set<Integer> previouslyFound = new HashSet<>();
 
         for (Confidence confidence : Confidence.values()) {
-            //TODO collect terms currently might break the token concatonating analyzer
-            //  need to make the terms a collection of terms
-            //  idea - create a single map of weighting from both product and vendor
-            //  then put tokens in sequence from the evidence but boosting each word
-            //  as found.
-            //  add test case with evidence  "pivotal spring" and "pivotal software"
-            //  result should be "pivototal^2 spring pivotal^2 software"
             collectTerms(vendors, dependency.getIterator(EvidenceType.VENDOR, confidence));
             LOGGER.debug("vendor search: {}", vendors);
             collectTerms(products, dependency.getIterator(EvidenceType.PRODUCT, confidence));
@@ -281,6 +274,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                 }
 
                 boolean identifierAdded = false;
+                //filtering on score seems to create additional FN - but maybe we should continue to investigate this option
 //                StandardDeviation stdev = new StandardDeviation();
 //                float maxScore = 0;
 //                for (IndexEntry e : entries) {
@@ -299,7 +293,8 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                         continue;
                     }
                     previouslyFound.add(e.getDocumentId());
-                    //LOGGER.error("\"Verifying entry\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"", dependency.getFileName(), e.getVendor(), e.getProduct(), confidence.toString(), e.getSearchScore(), filter);
+                    //LOGGER.error("\"Verifying entry\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"", dependency.getFileName(),
+                    //e.getVendor(), e.getProduct(), confidence.toString(), e.getSearchScore(), filter);
                     if (verifyEntry(e, dependency)) {
                         final String vendor = e.getVendor();
                         final String product = e.getProduct();
@@ -374,7 +369,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                     value = value.substring(0, 1000);
                 }
             }
-            MutableInt count = terms.get(value);
+            final MutableInt count = terms.get(value);
             if (count == null) {
                 terms.put(value, new MutableInt(1));
             } else {
@@ -500,9 +495,9 @@ public class CPEAnalyzer extends AbstractAnalyzer {
         sb.append(field).append(":(");
         boolean addSpace = false;
         for (Map.Entry<String, MutableInt> entry : terms.entrySet()) {
-            StringBuilder boostedTerms = new StringBuilder();
-            int weighting = entry.getValue().intValue();
-            String[] text = entry.getKey().split(" ");
+            final StringBuilder boostedTerms = new StringBuilder();
+            final int weighting = entry.getValue().intValue();
+            final String[] text = entry.getKey().split(" ");
             for (String word : text) {
                 if (word.isEmpty()) {
                     continue;
@@ -513,7 +508,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                     addSpace = true;
                 }
                 LuceneUtils.appendEscapedLuceneQuery(sb, word);
-                String boostTerm = findBoostTerm(word, weightedText);
+                final String boostTerm = findBoostTerm(word, weightedText);
 
                 //The weighting is on a full phrase rather then at a term level for vendor or products
                 //TODO - should the weighting be at a "word" level as opposed to phrase level? Or combined word and phrase?
@@ -1098,7 +1093,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
             if (this.identifierConfidence != other.identifierConfidence) {
                 return false;
             }
-            return !(this.identifier != other.identifier && (this.identifier == null || !this.identifier.equals(other.identifier)));
+            return !(this.identifier != other.identifier && (!this.identifier.equals(other.identifier)));
         }
         //</editor-fold>
 
@@ -1135,12 +1130,12 @@ public class CPEAnalyzer extends AbstractAnalyzer {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8))) {
                 while (true) {
 
-                    Map<String, MutableInt> vendor = new HashMap<>();
-                    Map<String, MutableInt> product = new HashMap<>();
+                    final Map<String, MutableInt> vendor = new HashMap<>();
+                    final Map<String, MutableInt> product = new HashMap<>();
                     System.out.print("Vendor: ");
                     String[] parts = br.readLine().split(" ");
                     for (String term : parts) {
-                        MutableInt count = vendor.get(term);
+                        final MutableInt count = vendor.get(term);
                         if (count == null) {
                             vendor.put(term, new MutableInt(0));
                         } else {
@@ -1150,7 +1145,7 @@ public class CPEAnalyzer extends AbstractAnalyzer {
                     System.out.print("Product: ");
                     parts = br.readLine().split(" ");
                     for (String term : parts) {
-                        MutableInt count = product.get(term);
+                        final MutableInt count = product.get(term);
                         if (count == null) {
                             product.put(term, new MutableInt(0));
                         } else {

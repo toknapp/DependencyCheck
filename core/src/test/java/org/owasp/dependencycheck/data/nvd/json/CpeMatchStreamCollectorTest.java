@@ -26,7 +26,7 @@ import static org.junit.Assert.*;
 
 /**
  *
- * @author jeremy
+ * @author jeremy long
  */
 public class CpeMatchStreamCollectorTest {
 

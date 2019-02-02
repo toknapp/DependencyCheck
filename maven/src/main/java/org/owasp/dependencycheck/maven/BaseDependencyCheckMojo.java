@@ -202,7 +202,7 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
     @Parameter(property = "enableRetired")
     private Boolean enableRetired;
 
-/**
+    /**
      * Use pom dependency information for snapshot dependencies that are part of
      * the Maven reactor while aggregate scanning a multi-module project.
      *
@@ -842,10 +842,20 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
         }
     }
 
-    private DependencyNode toDependencyNode(ProjectBuildingRequest buildingRequest, DependencyNode parent, org.apache.maven.model.Dependency dependency)
-            throws ArtifactResolverException {
+    /**
+     * Converts the dependency to a dependency node object.
+     *
+     * @param buildingRequest the Maven project building request
+     * @param parent the parent node
+     * @param dependency the dependency to convert
+     * @return the resulting dependency node
+     * @throws ArtifactResolverException thrown if the artifact could not be
+     * retrieved
+     */
+    private DependencyNode toDependencyNode(ProjectBuildingRequest buildingRequest, DependencyNode parent,
+            org.apache.maven.model.Dependency dependency) throws ArtifactResolverException {
 
-        DefaultArtifactCoordinate coordinate = new DefaultArtifactCoordinate();
+        final DefaultArtifactCoordinate coordinate = new DefaultArtifactCoordinate();
 
         coordinate.setGroupId(dependency.getGroupId());
         coordinate.setArtifactId(dependency.getArtifactId());
@@ -853,16 +863,26 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
         coordinate.setExtension(dependency.getType());
         coordinate.setClassifier(dependency.getClassifier());
 
-        Artifact artifact = artifactResolver.resolveArtifact(buildingRequest, coordinate).getArtifact();
+        final Artifact artifact = artifactResolver.resolveArtifact(buildingRequest, coordinate).getArtifact();
 
         artifact.setScope(dependency.getScope());
 
-        DefaultDependencyNode node = new DefaultDependencyNode(parent, artifact, dependency.getVersion(), dependency.getScope(), null);
+        final DefaultDependencyNode node = new DefaultDependencyNode(parent, artifact, dependency.getVersion(), dependency.getScope(), null);
 
         return node;
 
     }
 
+    /**
+     * Collect dependencies from the dependency management section.
+     *
+     * @param buildingRequest the Maven project building request
+     * @param project the project being analyzed
+     * @param nodes the list of dependency nodes
+     * @param aggregate whether or not this is an aggregate analysis
+     * @return a collection of exceptions if any occurred; otherwise
+     * <code>null</code>
+     */
     private ExceptionCollection collectDependencyManagementDependencies(ProjectBuildingRequest buildingRequest, MavenProject project,
             List<DependencyNode> nodes, boolean aggregate) {
         if (skipDependencyManagement || project.getDependencyManagement() == null) {
@@ -899,9 +919,9 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
      */
     private ExceptionCollection collectMavenDependencies(Engine engine, MavenProject project,
             List<DependencyNode> nodes, ProjectBuildingRequest buildingRequest, boolean aggregate) {
-        
+
         ExceptionCollection exCol = collectDependencyManagementDependencies(buildingRequest, project, nodes, aggregate);
-        
+
         for (DependencyNode dependencyNode : nodes) {
             if (artifactScopeExcluded.passes(dependencyNode.getArtifact().getScope())
                     || artifactTypeExcluded.passes(dependencyNode.getArtifact().getType())) {

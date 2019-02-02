@@ -22,6 +22,8 @@ import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.owasp.dependencycheck.dependency.Confidence;
 import com.github.packageurl.PackageURL;
 import com.github.packageurl.PackageURLBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * The Package-URL Identifier implementation.
@@ -180,6 +182,19 @@ public class PurlIdentifier implements Identifier {
         return purl.getVersion();
     }
 
+    /**
+     * Returns the GAV representation of the Package URL as utilized in gradle
+     * builds.
+     *
+     * @return the GAV representation of the Package URL
+     */
+    public String toGav() {
+        if (purl.getNamespace() != null && purl.getVersion() != null) {
+            return String.format("%s:%s:%s", purl.getNamespace(), purl.getName(), purl.getVersion());
+        }
+        return null;
+    }
+
     @Override
     public int compareTo(Identifier o) {
         if (o instanceof PurlIdentifier) {
@@ -199,16 +214,31 @@ public class PurlIdentifier implements Identifier {
                 .toComparison();
     }
 
-    /**
-     * Returns the GAV representation of the Package URL as utilized in gradle
-     * builds.
-     *
-     * @return the GAV representation of the Package URL
-     */
-    public String toGav() {
-        if (purl.getNamespace() != null && purl.getVersion() != null) {
-            return String.format("%s:%s:%s", purl.getNamespace(), purl.getName(), purl.getVersion());
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+                .append(this.purl)
+                .append(this.confidence)
+                .append(this.url)
+                .append(this.notes)
+                .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
         }
-        return null;
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof PurlIdentifier)) {
+            return false;
+        }
+        PurlIdentifier other = (PurlIdentifier) obj;
+        return new EqualsBuilder().append(purl, other.purl)
+                .append(this.confidence, other.confidence)
+                .append(this.url, other.url)
+                .append(this.notes, other.notes).isEquals();
     }
 }

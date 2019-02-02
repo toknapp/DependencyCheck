@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author jeremy
+ * @author jeremy long
  */
 @ThreadSafe
 public final class PomUtils {

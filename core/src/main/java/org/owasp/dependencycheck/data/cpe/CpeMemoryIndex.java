@@ -17,6 +17,7 @@
  */
 package org.owasp.dependencycheck.data.cpe;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,11 +42,12 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MMapDirectory;
 import org.owasp.dependencycheck.data.lucene.SearchFieldAnalyzer;
 import org.owasp.dependencycheck.data.nvdcve.CveDB;
 import org.owasp.dependencycheck.data.nvdcve.DatabaseException;
 import org.owasp.dependencycheck.utils.Pair;
+import org.owasp.dependencycheck.utils.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +78,7 @@ public final class CpeMemoryIndex implements AutoCloseable {
     /**
      * The in memory Lucene index.
      */
-    private RAMDirectory index;
+    private MMapDirectory index;
     /**
      * The Lucene IndexReader.
      */
@@ -126,13 +128,16 @@ public final class CpeMemoryIndex implements AutoCloseable {
      * Creates and loads data into an in memory index.
      *
      * @param cve the data source to retrieve the cpe data
+     * @param settings a reference to the dependency-check settings
      * @throws IndexException thrown if there is an error creating the index
      */
-    public synchronized void open(CveDB cve) throws IndexException {
+    public synchronized void open(CveDB cve, Settings settings) throws IndexException {
         if (INSTANCE.usageCount.addAndGet(1) == 1) {
-            index = new RAMDirectory();
-            buildIndex(cve);
             try {
+                File temp = settings.getTempDirectory();
+                index = new MMapDirectory(temp.toPath());
+                buildIndex(cve);
+
                 indexReader = DirectoryReader.open(index);
             } catch (IOException ex) {
                 throw new IndexException(ex);
@@ -191,7 +196,11 @@ public final class CpeMemoryIndex implements AutoCloseable {
             queryParser = null;
             indexSearcher = null;
             if (index != null) {
-                index.close();
+                try {
+                    index.close();
+                } catch (IOException ex) {
+                    LOGGER.trace("", ex);
+                }
                 index = null;
             }
         }
@@ -206,9 +215,9 @@ public final class CpeMemoryIndex implements AutoCloseable {
     private void buildIndex(CveDB cve) throws IndexException {
         try (Analyzer analyzer = createSearchingAnalyzer();
                 IndexWriter indexWriter = new IndexWriter(index,
-                        new IndexWriterConfig(analyzer))) {//.setSimilarity(similarity))) {
+                        new IndexWriterConfig(analyzer))) {
 
-            FieldType ft = new FieldType(TextField.TYPE_STORED);
+            final FieldType ft = new FieldType(TextField.TYPE_STORED);
             //ignore term frequency
             ft.setIndexOptions(IndexOptions.DOCS);
             //ignore field length normalization
@@ -319,10 +328,23 @@ public final class CpeMemoryIndex implements AutoCloseable {
         return indexReader.numDocs();
     }
 
+    /**
+     * Method to explain queries matches.
+     *
+     * @param query the query used
+     * @param doc the document matched
+     * @return the expalanation
+     * @throws IOException thrown if there is an index error
+     */
     public synchronized String explain(Query query, int doc) throws IOException {
         return indexSearcher.explain(query, doc).toString();
     }
 
+    /**
+     * Common method to reset the searching analyzers.
+     *
+     * @throws IOException thrown if there is an index error
+     */
     protected synchronized void resetAnalyzers() throws IOException {
         productFieldAnalyzer.reset();
         vendorFieldAnalyzer.reset();

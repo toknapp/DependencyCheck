@@ -21,7 +21,7 @@ import javax.annotation.concurrent.ThreadSafe;
 
 /**
  *
- * @author jeremy
+ * @author jeremy long
  */
 @ThreadSafe
 public class License {

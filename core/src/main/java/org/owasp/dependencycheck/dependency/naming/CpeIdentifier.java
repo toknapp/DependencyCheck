@@ -18,6 +18,8 @@
 package org.owasp.dependencycheck.dependency.naming;
 
 import org.apache.commons.lang3.builder.CompareToBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.owasp.dependencycheck.dependency.Confidence;
 import us.springett.parsers.cpe.Cpe;
 import us.springett.parsers.cpe.CpeBuilder;
@@ -156,6 +158,34 @@ public class CpeIdentifier implements Identifier {
     @Override
     public String toString() {
         return cpe.toCpe23FS();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+                .append(this.cpe)
+                .append(this.confidence)
+                .append(this.url)
+                .append(this.notes)
+                .toHashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof CpeIdentifier)) {
+            return false;
+        }
+        CpeIdentifier other = (CpeIdentifier) obj;
+        return new EqualsBuilder().append(cpe, other.cpe)
+                .append(this.confidence, other.confidence)
+                .append(this.url, other.url)
+                .append(this.notes, other.notes).isEquals();
     }
 
     @Override

@@ -324,12 +324,13 @@ public class VulnerableSoftware extends Cpe implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
         sb.append(this.toCpe23FS());
         boolean textAdded = false;
         if (versionStartIncluding != null && !versionStartIncluding.isEmpty()) {
             sb.append(" versions from (including) ")
                     .append(versionStartIncluding);
+            textAdded = true;
         }
         if (versionStartExcluding != null && !versionStartExcluding.isEmpty()) {
             if (textAdded) {
@@ -337,6 +338,7 @@ public class VulnerableSoftware extends Cpe implements Serializable {
             }
             sb.append(" versions from (excluding) ")
                     .append(versionStartExcluding);
+            textAdded = true;
         }
         if (versionEndIncluding != null && !versionEndIncluding.isEmpty()) {
             if (textAdded) {
@@ -344,6 +346,7 @@ public class VulnerableSoftware extends Cpe implements Serializable {
             }
             sb.append(" versions up to (including) ")
                     .append(versionEndIncluding);
+            textAdded = true;
         }
         if (versionEndExcluding != null && !versionEndExcluding.isEmpty()) {
             if (textAdded) {
@@ -351,6 +354,7 @@ public class VulnerableSoftware extends Cpe implements Serializable {
             }
             sb.append(" versions up to (excluding) ")
                     .append(versionEndExcluding);
+            textAdded = true;
         }
         if (!vulnerable) {
             if (textAdded) {

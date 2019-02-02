@@ -17,6 +17,7 @@
  */
 package org.owasp.dependencycheck.dependency;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,7 +29,12 @@ import org.owasp.dependencycheck.data.cwe.CweDB;
  *
  * @author Jeremy Long
  */
-public class CweSet {
+public class CweSet implements Serializable {
+
+    /**
+     * Serial version UID.
+     */
+    private static final long serialVersionUID = 7884812602736995362L;
 
     /**
      * The set of CWE entries.

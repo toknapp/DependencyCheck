@@ -17,12 +17,19 @@
  */
 package org.owasp.dependencycheck.dependency;
 
+import java.io.Serializable;
+
 /**
  * CVSS V2 scoring information.
  *
  * @author Jeremy Long
  */
-public class CvssV2 {
+public class CvssV2 implements Serializable {
+
+    /**
+     * Serial version UID.
+     */
+    private static final long serialVersionUID = -2203955879356702367L;
 
     /**
      * CVSS Score.

@@ -19,7 +19,6 @@ package org.owasp.dependencycheck.analyzer;
 
 import org.owasp.dependencycheck.Engine;
 import org.owasp.dependencycheck.analyzer.exception.AnalysisException;
-import org.owasp.dependencycheck.data.composer.ComposerDependency;
 import org.owasp.dependencycheck.data.composer.ComposerException;
 import org.owasp.dependencycheck.data.composer.ComposerLockParser;
 import org.owasp.dependencycheck.dependency.Confidence;

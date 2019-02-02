@@ -32,7 +32,7 @@ Advanced Options
 |       | \-\-updateonly                         |                 | If set only the update phase of dependency-check will be executed; no scan will be executed and no report will be generated. | &nbsp; |
 |       | \-\-disablePyDist                      |                 | Sets whether the [experimental](../analyzers/index.html) Python Distribution Analyzer will be used.                          | false |
 |       | \-\-disablePyPkg                       |                 | Sets whether the [experimental](../analyzers/index.html) Python Package Analyzer will be used.                               | false |
-|       | \-\-disableNodeJS                      |                 | Sets whether the [retired](../analyzers/index.html) Node.js Package Analyzer will be used.                                   | false |
+|       | \-\-disableNodeJS                      |                 | Sets whether the Node.js Package Analyzer will be used.                                   | false |
 |       | \-\-disableNodeAudit                   |                 | Sets whether the Node Audit Analyzer will be used.                                                                           | false |
 |       | \-\-disableRetireJS                    |                 | Sets whether the [experimental](../analyzers/index.html) RetireJS Analyzer will be used.                                     | false |
 |       | \-\-retirejsFitler                     | \<pattern\>     | The RetireJS Analyzers content filter used to exclude JS files when the content contains the given regular expression; this option can be specified multiple times. | &nbsp; |

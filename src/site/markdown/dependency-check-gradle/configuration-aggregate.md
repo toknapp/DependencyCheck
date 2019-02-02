@@ -126,7 +126,7 @@ analyzers    | pathToMono            | The path to Mono for .NET assembly analys
 analyzers    | cmakeEnabled          | Sets whether or not the [experimental](../analyzers/index.html) CMake Analyzer should be used.                    | true
 analyzers    | autoconfEnabled       | Sets whether or not the [experimental](../analyzers/index.html) autoconf Analyzer should be used.                 | true
 analyzers    | composerEnabled       | Sets whether or not the [experimental](../analyzers/index.html) PHP Composer Lock File Analyzer should be used.   | true
-analyzers    | nodeEnabled           | Sets whether or not the [retired](../analyzers/index.html) Node.js Analyzer should be used.                  | true
+analyzers    | nodeEnabled           | Sets whether or not the Node.js Analyzer should be used.                  | true
 analyzers    | nodeAuditEnabled      | Sets whether the Node Audit Analyzer should be used.                                                                     | true
 analyzers    | cocoapodsEnabled      | Sets whether or not the [experimental](../analyzers/index.html) Cocoapods Analyzer should be used.                | true
 analyzers    | swiftEnabled          | Sets whether or not the [experimental](../analyzers/index.html) Swift Package Manager Analyzer should be used.    | true
