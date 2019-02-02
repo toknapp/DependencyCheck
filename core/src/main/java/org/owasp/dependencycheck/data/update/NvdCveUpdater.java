@@ -251,7 +251,7 @@ public class NvdCveUpdater implements CachedWebDataSource {
         for (NvdCveInfo cve : updateable) {
             if (cve.getNeedsUpdate()) {
                 final DownloadTask call = new DownloadTask(cve, processingExecutorService, cveDb, settings);
-final                boolean added = downloadFutures.add(downloadExecutorService.submit(call));
+                final boolean added = downloadFutures.add(downloadExecutorService.submit(call));
                 if (!added) {
                     throw new UpdateException("Unable to add the download task for " + cve.getId());
                 }
@@ -390,11 +390,13 @@ final                boolean added = downloadFutures.add(downloadExecutorService
     }
 
     /**
-     * Retrieves the timestamps from the NVD CVE by checking the last modified date.
+     * Retrieves the timestamps from the NVD CVE by checking the last modified
+     * date.
      *
-     * @return the last modified date from the currently published NVD CVE downloads page
-     * @throws MalformedURLException thrown if the URL for the NVD CVE data
-     * is incorrect.
+     * @return the last modified date from the currently published NVD CVE
+     * downloads page
+     * @throws MalformedURLException thrown if the URL for the NVD CVE data is
+     * incorrect.
      * @throws DownloadFailedException thrown if there is an error retrieving
      * the time stamps from the NVD CVE
      * @throws InvalidDataException thrown if there is an exception parsing the
@@ -424,14 +426,15 @@ final                boolean added = downloadFutures.add(downloadExecutorService
     }
 
     /**
-     * Retrieves the timestamps from the NVD CVE by checking the last modified date.
+     * Retrieves the timestamps from the NVD CVE by checking the last modified
+     * date.
      *
      * @param startYear the first year whose item to check for the timestamp
      * @param endYear the last year whose item to check for the timestamp
      * @return the timestamps from the currently published NVD CVE downloads
      * page
-     * @throws MalformedURLException thrown if the URL for the NVD CVE data
-     * is incorrect.
+     * @throws MalformedURLException thrown if the URL for the NVD CVE data is
+     * incorrect.
      * @throws DownloadFailedException thrown if there is an error retrieving
      * the time stamps from the NVD CVE
      */
@@ -509,7 +512,7 @@ final                boolean added = downloadFutures.add(downloadExecutorService
         public Long call() throws Exception {
             LOGGER.debug("Checking for updates from: {}", url);
             try {
-final                HttpResourceConnection resource = new HttpResourceConnection(settings);
+                final HttpResourceConnection resource = new HttpResourceConnection(settings);
                 return resource.getLastModified(new URL(url));
             } finally {
                 settings.cleanup(false);

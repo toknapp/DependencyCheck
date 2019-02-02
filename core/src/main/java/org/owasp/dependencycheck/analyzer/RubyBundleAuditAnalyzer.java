@@ -470,7 +470,7 @@ public class RubyBundleAuditAnalyzer extends AbstractFileTypeAnalyzer {
                     .product(String.format("%s_project", gem))
                     .version(version).build();
             vulnerability.addVulnerableSoftware(vs);
-            vulnerability.setMatchedCPE(vs.toCpe23FS());
+            vulnerability.setMatchedVulnerableSoftware(vs);
             vulnerability.setCvssV2(new CvssV2(-1, "-", "-", "-", "-", "-", "-", "unknown"));
         }
         LOGGER.debug("bundle-audit ({}): {}", parentName, nextLine);

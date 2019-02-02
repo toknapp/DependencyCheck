@@ -473,12 +473,12 @@ public final class CveDB implements AutoCloseable {
                         .vendor(rs.getString(2))
                         .product(rs.getString(3))
                         .version(rs.getString(4))
-                        .update((rs.getString(5)))
-                        .edition((rs.getString(6)))
-                        .language((rs.getString(7)))
-                        .swEdition((rs.getString(8)))
-                        .targetSw((rs.getString(9)))
-                        .targetHw((rs.getString(10)))
+                        .update(rs.getString(5))
+                        .edition(rs.getString(6))
+                        .language(rs.getString(7))
+                        .swEdition(rs.getString(8))
+                        .targetSw(rs.getString(9))
+                        .targetHw(rs.getString(10))
                         .other((rs.getString(11))).build();
                 cpe.add(vs);
             }
@@ -617,7 +617,7 @@ public final class CveDB implements AutoCloseable {
                     if (matchedCPE != null) {
                         final Vulnerability v = getVulnerability(currentCVE);
                         if (v != null) {
-                            v.setMatchedCPE(matchedCPE.toCpe23FS());
+                            v.setMatchedVulnerableSoftware(matchedCPE);
                             vulnerabilities.add(v);
                         }
                     }
@@ -646,7 +646,7 @@ public final class CveDB implements AutoCloseable {
             if (matchedCPE != null) {
                 final Vulnerability v = getVulnerability(currentCVE);
                 if (v != null) {
-                    v.setMatchedCPE(matchedCPE.toCpe23FS());
+                    v.setMatchedVulnerableSoftware(matchedCPE);
                     vulnerabilities.add(v);
                 }
             }
@@ -771,7 +771,7 @@ public final class CveDB implements AutoCloseable {
             int vulnerabilityId = updateVulnerabilityGetVulnerabilityId(cveId);
 
             final String description = cve.getCve().getDescription().getDescriptionData().stream().filter((desc)
-                    -> ("en".equals(desc.getLang()))).map(d
+                    -> "en".equals(desc.getLang())).map(d
                     -> d.getValue()).collect(Collectors.joining(" "));
 
             if (vulnerabilityId != 0) {

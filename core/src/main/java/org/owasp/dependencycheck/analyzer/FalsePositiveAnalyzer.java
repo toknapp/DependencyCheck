@@ -397,6 +397,7 @@ public class FalsePositiveAnalyzer extends AbstractAnalyzer {
      *
      * @param dependency the dependency being analyzed
      */
+    @SuppressWarnings("UnnecessaryParentheses")
     private void addFalseNegativeCPEs(Dependency dependency) {
         final CpeBuilder builder = new CpeBuilder();
         //TODO move this to the hint analyzer

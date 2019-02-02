@@ -158,9 +158,9 @@ public abstract class AbstractNpmAnalyzer extends AbstractFileTypeAnalyzer {
      */
     protected void processPackage(Engine engine, Dependency dependency, JsonArray jsonArray, String depType) {
         final JsonObjectBuilder builder = Json.createObjectBuilder();
-        for (JsonString str : jsonArray.getValuesAs(JsonString.class)) {
+        jsonArray.getValuesAs(JsonString.class).forEach((str) -> {
             builder.add(str.toString(), "");
-        }
+        });
         final JsonObject jsonObject = builder.build();
         processPackage(engine, dependency, jsonObject, depType);
     }
@@ -176,8 +176,7 @@ public abstract class AbstractNpmAnalyzer extends AbstractFileTypeAnalyzer {
      */
     protected void processPackage(Engine engine, Dependency dependency, JsonObject jsonObject, String depType) {
         for (int i = 0; i < jsonObject.size(); i++) {
-            for (Map.Entry<String, JsonValue> entry : jsonObject.entrySet()) {
-
+            jsonObject.entrySet().forEach((entry) -> {
                 final String name = entry.getKey();
                 String version = "";
                 if (entry.getValue() != null && entry.getValue().getValueType() == JsonValue.ValueType.STRING) {
@@ -190,7 +189,7 @@ public abstract class AbstractNpmAnalyzer extends AbstractFileTypeAnalyzer {
                 } else {
                     existing.addProjectReference(dependency.getName() + ": " + depType);
                 }
-            }
+            });
         }
     }
 

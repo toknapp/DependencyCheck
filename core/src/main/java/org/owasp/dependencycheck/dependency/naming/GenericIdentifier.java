@@ -143,7 +143,7 @@ public class GenericIdentifier implements Identifier {
      */
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || getClass() != obj.getClass()) {
+        if (obj == null || !(obj instanceof GenericIdentifier)) {
             return false;
         }
         final GenericIdentifier other = (GenericIdentifier) obj;

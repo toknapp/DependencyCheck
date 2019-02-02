@@ -208,7 +208,6 @@ Copyright (c) 2012 Jeremy Long. All Rights Reserved.
             <artifactId>jmockit</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Upgrading transitive commons-collections-3.2.1 from velocity-1.7. -->
         <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
@@ -220,10 +219,6 @@ Copyright (c) 2012 Jeremy Long. All Rights Reserved.
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -421,7 +416,6 @@ Copyright (c) 2012 Jeremy Long. All Rights Reserved.
             <scope>test</scope>
             <optional>true</optional>
         </dependency>
-
     </dependencies>
     <profiles>
         <profile>

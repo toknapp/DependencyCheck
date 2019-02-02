@@ -155,7 +155,7 @@ public class CvssV2 {
 
     @Override
     public String toString() {
-        return String.format("(AV:%s/AC:%s/Au:%s/C:%s/I:%s/A:%s)",
+        return String.format("/AV:%s/AC:%s/Au:%s/C:%s/I:%s/A:%s",
                 accessVector == null ? "" : accessVector.substring(0, 1),
                 accessComplexity == null ? "" : accessComplexity.substring(0, 1),
                 authentication == null ? "" : authentication.substring(0, 1),

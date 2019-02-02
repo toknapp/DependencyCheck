@@ -126,7 +126,12 @@
     <xs:complexType name="software">
         <xs:simpleContent>
             <xs:extension base="xs:string">
-                <xs:attribute name="allPreviousVersion" type="xs:boolean"/>
+                <xs:attribute name="vulnerabilityIdMatched" type="xs:boolean"/>
+                <xs:attribute name="versionStartIncluding" type="xs:string"/>
+                <xs:attribute name="versionStartExcluding" type="xs:string"/>
+                <xs:attribute name="versionEndIncluding" type="xs:string"/>
+                <xs:attribute name="versionEndExcluding" type="xs:string"/>
+                <xs:attribute name="vulnerable" type="xs:boolean"/>
             </xs:extension>
         </xs:simpleContent>
     </xs:complexType>

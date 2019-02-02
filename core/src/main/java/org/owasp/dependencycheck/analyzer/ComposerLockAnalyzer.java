@@ -106,7 +106,7 @@ public class ComposerLockAnalyzer extends AbstractFileTypeAnalyzer {
             final ComposerLockParser clp = new ComposerLockParser(fis);
             LOGGER.debug("Checking composer.lock file {}", dependency.getActualFilePath());
             clp.process();
-            for (ComposerDependency dep : clp.getDependencies()) {
+            clp.getDependencies().stream().map((dep) -> {
                 final Dependency d = new Dependency(dependency.getActualFile(), true);
                 final String filePath = String.format("%s:%s/%s/%s", dependency.getFilePath(), dep.getGroup(), dep.getProject(), dep.getVersion());
                 d.setName(dep.getProject());
@@ -120,9 +120,11 @@ public class ComposerLockAnalyzer extends AbstractFileTypeAnalyzer {
                 d.addEvidence(EvidenceType.VENDOR, COMPOSER_LOCK, "vendor", dep.getGroup(), Confidence.HIGHEST);
                 d.addEvidence(EvidenceType.PRODUCT, COMPOSER_LOCK, "product", dep.getProject(), Confidence.HIGHEST);
                 d.addEvidence(EvidenceType.VERSION, COMPOSER_LOCK, "version", dep.getVersion(), Confidence.HIGHEST);
+                return d;
+            }).forEach((d) -> {
                 LOGGER.debug("Adding dependency {}", d.getDisplayFileName());
                 engine.addDependency(d);
-            }
+            });
         } catch (IOException ex) {
             LOGGER.warn("Error opening dependency {}", dependency.getActualFilePath());
         } catch (ComposerException ce) {

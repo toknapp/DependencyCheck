@@ -865,13 +865,13 @@ Getting Help: <a href="https://github.com/jeremylong/DependencyCheck/issues" tar
                             <p>
                             #if($vuln.getCvssV2())
                             CVSSv2:
-                            <ul><li>$enc.html($vuln.getCvssV2().getSeverity()) ($vuln.getCvssV2().getScore())</li>
-                            <li>$enc.html($vuln.getCvssV2().toString())</li></ul>
+                            <ul><li>Base Score: $enc.html($vuln.getCvssV2().getSeverity()) ($vuln.getCvssV2().getScore())</li>
+                            <li>Vector: $enc.html($vuln.getCvssV2().toString())</li></ul>
                             #end
                             #if($vuln.getCvssV3())
                             CVSSv3:
-                            <ul><li>$enc.html($vuln.getCvssV3().getBaseSeverity()) ($vuln.getCvssV3().getBaseScore())</li>
-                            <li>$enc.html($vuln.getCvssV3().toString())</li></ul>
+                            <ul><li>Base Score: $enc.html($vuln.getCvssV3().getBaseSeverity()) ($vuln.getCvssV3().getBaseScore())</li>
+                            <li>Vector: $enc.html($vuln.getCvssV3().toString())</li></ul>
                             #end
                             #if ($vuln.cwe)
                                 <br/>CWE: $vuln.cwe.toString()
@@ -892,14 +892,14 @@ Getting Help: <a href="https://github.com/jeremylong/DependencyCheck/issues" tar
                             #if ($vuln.getSource().name().equals("NVD"))
                                 #if ($vuln.getVulnerableSoftware().size()<2)
                                     <p>Vulnerable Software &amp; Versions:<ul>
-                                        <li class="vs$vsctr"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vuln.matchedCPE)">$enc.html($vuln.matchedCPE)</a> #if($vuln.hasMatchedAllPreviousCPE()) and all previous versions#end</li>
+                                        <li class="vs$vsctr"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vuln.matchedVulnerableSoftware.toCpe22Uri())">$enc.html($vuln.matchedVulnerableSoftware.toString())</a></li>
                                     </ul></p>
                                 #else
                                     <p>Vulnerable Software &amp; Versions:&nbsp;(<a href="#" onclick="return toggleDisplay(this,'.vs$vsctr', 'show all', 'show less');">show all</a>)<ul>
-                                        <li class="vs$vsctr"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vuln.matchedCPE)">$enc.html($vuln.matchedCPE)</a> #if($vuln.hasMatchedAllPreviousCPE()) and all previous versions#end</li>
+                                        <li class="vs$vsctr"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vuln.matchedVulnerableSoftware.toCpe22Uri())">$enc.html($vuln.matchedVulnerableSoftware.toString())</a></li>
                                         <li class="vs$vsctr">...</li>
                                     #foreach($vs in $vuln.getVulnerableSoftware(true))
-                                        <li class="vs$vsctr hidden"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vs.name)">$enc.html($vs.name)</a> #if($vs.hasPreviousVersion()) and all previous versions#end</li>
+                                        <li class="vs$vsctr hidden"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vs.toCpe22Uri())">$enc.html($vs.toString())</a></li>
                                     #end
                                     </ul></p>
                                 #end
@@ -907,7 +907,7 @@ Getting Help: <a href="https://github.com/jeremylong/DependencyCheck/issues" tar
                                 <p>Vulnerable Software &amp; Versions:
                                     <ul>
                                     #foreach($vs in $vuln.getVulnerableSoftware())
-                                        <li class="vs$vsctr">$enc.html($vs.name)</li>
+                                        <li class="vs$vsctr">$enc.html($vs.toString())</li>
                                     #end
                                     </ul>
                                 </p>
@@ -1032,8 +1032,8 @@ Getting Help: <a href="https://github.com/jeremylong/DependencyCheck/issues" tar
                                     <p>
                                     #if($vuln.getCvssV2())
                                     CVSSv2:
-                                    <ul><li>$enc.html($vuln.getCvssV2().getSeverity()) ($vuln.getCvssV2().getScore())</li>
-                                    <li>$enc.html($vuln.getCvssV2().toString())</li></ul>
+                                    <ul><li>Base Score: $enc.html($vuln.getCvssV2().getSeverity()) ($vuln.getCvssV2().getScore())</li>
+                                    <li>Vector: $enc.html($vuln.getCvssV2().toString())</li></ul>
                                     #end
                                     #if($vuln.getCvssV3())
                                     CVSSv3:
@@ -1057,14 +1057,14 @@ Getting Help: <a href="https://github.com/jeremylong/DependencyCheck/issues" tar
                                     </p>
                                     #if ($vuln.getVulnerableSoftware().size()<2)
                                         <p>Vulnerable Software &amp; Versions:<ul>
-                                            <li class="vs$vsctr"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vuln.matchedCPE)">$enc.html($vuln.matchedCPE)</a> #if($vuln.hasMatchedAllPreviousCPE()) and all previous versions#end</li>
+                                            <li class="vs$vsctr"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vuln.matchedVulnerableSoftware.toCpe22Uri())">$enc.html($vuln.matchedVulnerableSoftware.toString())</a></li>
                                         </ul></p>
                                     #else
                                         <p>Vulnerable Software &amp; Versions:&nbsp;(<a href="#" onclick="return toggleDisplay(this,'.vs$vsctr', 'show all', 'show less');">show all</a>)<ul>
-                                            <li class="vs$vsctr"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vuln.matchedCPE)">$enc.html($vuln.matchedCPE)</a> #if($vuln.hasMatchedAllPreviousCPE()) and all previous versions#end</li>
+                                            <li class="vs$vsctr"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vuln.matchedVulnerableSoftware.toCpe22Uri())">$enc.html($vuln.matchedVulnerableSoftware.toString())</a></li>
                                             <li class="vs$vsctr">...</li>
                                         #foreach($vs in $vuln.getVulnerableSoftware(true))
-                                            <li class="vs$vsctr hidden"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vs.name)">$enc.html($vs.name)</a> #if($vs.hasPreviousVersion()) and all previous versions#end</li>
+                                            <li class="vs$vsctr hidden"><a target="_blank" href="https://web.nvd.nist.gov/view/vuln/search-results?adv_search=true&cves=on&cpe_version=$enc.url($vs.toCpe22Uri())">$enc.html($vs.toString())</a></li>
                                         #end
                                         </ul></p>
                                     #end

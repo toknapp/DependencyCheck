@@ -52,7 +52,7 @@ public class PythonPackageAnalyzer extends AbstractFileTypeAnalyzer {
      * A descriptor for the type of dependencies processed or added by this
      * analyzer.
      */
-    public static final String DEPENDENCY_ECOSYSTEM = "Python.Pkg";
+    public static final String DEPENDENCY_ECOSYSTEM = PythonDistributionAnalyzer.DEPENDENCY_ECOSYSTEM;
 
     /**
      * Used when compiling file scanning regex patterns.

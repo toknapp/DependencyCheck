@@ -192,8 +192,15 @@
                 "vulnerableSoftware": [
                     #foreach($vs in $vuln.getVulnerableSoftware())
                         #if($foreach.count > 1),#end {
-                        "software": "$enc.json($vs.name)"
-                        #if($vs.hasPreviousVersion()) ,"allPreviousVersion": "true"#end
+                        "software": { 
+                            "id":"$enc.json($vs.toCpe23FS())"
+                            #if($vs == $vuln.matchedVulnerableSoftware),"vulnerabilityIdMatched":"true"#end
+                            #if($vs.versionStartIncluding),"versionStartIncluding":"$enc.json($vs.versionStartIncluding)"#end
+                            #if($vs.versionStartExcluding),"versionStartExcluding":"$enc.json($vs.versionStartExcluding)"#end
+                            #if($vs.versionEndIncluding),"versionEndIncluding":"$enc.json($vs.versionEndIncluding)"#end
+                            #if($vs.versionEndExcluding),"versionEndExcluding":"$enc.json($vs.versionEndExcluding)"#end
+                            #if(!$vs.vulnerable),"vulnerable":"$vs.vulnerable"#end
+                        }
                     }#end
                 ]
                 }#end
@@ -250,8 +257,15 @@
                 "vulnerableSoftware": [
                     #foreach($vs in $vuln.getVulnerableSoftware())
                         #if($foreach.count > 1),#end {
-                        "name": "$enc.json($vs.name)"
-                        #if($vs.hasPreviousVersion()) ,"allPreviousVersion": "true"#end
+                        "software": { 
+                            "id":"$enc.json($vs.toCpe23FS())"
+                            #if($vs == $vuln.matchedVulnerableSoftware),"vulnerabilityIdMatched":"true"#end
+                            #if($vs.versionStartIncluding),"versionStartIncluding":"$enc.json($vs.versionStartIncluding)"#end
+                            #if($vs.versionStartExcluding),"versionStartExcluding":"$enc.json($vs.versionStartExcluding)"#end
+                            #if($vs.versionEndIncluding),"versionEndIncluding":"$enc.json($vs.versionEndIncluding)"#end
+                            #if($vs.versionEndExcluding),"versionEndExcluding":"$enc.json($vs.versionEndExcluding)"#end
+                            #if(!$vs.vulnerable),"vulnerable":"$vs.vulnerable"#end
+                        }
                     }#end
                 ]
                 }#end

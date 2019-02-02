@@ -23,6 +23,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import javax.annotation.concurrent.ThreadSafe;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * A CPE entry containing the name, vendor, product, and version.
@@ -43,7 +44,7 @@ public class IndexEntry implements Serializable {
     /**
      * The documentId.
      */
-    private String documentId;
+    private int documentId;
     /**
      * The product name.
      */
@@ -58,10 +59,7 @@ public class IndexEntry implements Serializable {
      *
      * @return the value of documentId
      */
-    public String getDocumentId() {
-        if (documentId == null && vendor != null && product != null) {
-            documentId = vendor + ':' + product;
-        }
+    public int getDocumentId() {
         return documentId;
     }
 
@@ -70,7 +68,7 @@ public class IndexEntry implements Serializable {
      *
      * @param documentId new value of documentId
      */
-    public void setDocumentId(String documentId) {
+    public void setDocumentId(int documentId) {
         this.documentId = documentId;
     }
 
@@ -161,9 +159,13 @@ public class IndexEntry implements Serializable {
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 97 * hash + (this.getDocumentId() != null ? this.getDocumentId().hashCode() : 0);
-        return hash;
+        return new HashCodeBuilder(5, 27)
+                .appendSuper(super.hashCode())
+                .append(documentId)
+                .append(vendor)
+                .append(product)
+                .append(searchScore)
+                .build();
     }
 
     @Override
@@ -188,6 +190,6 @@ public class IndexEntry implements Serializable {
      */
     @Override
     public String toString() {
-        return "IndexEntry{" + "vendor=" + vendor + ", product=" + product + '}';
+        return "IndexEntry{" + "vendor=" + vendor + ", product=" + product + "', score=" + searchScore + "}";
     }
 }

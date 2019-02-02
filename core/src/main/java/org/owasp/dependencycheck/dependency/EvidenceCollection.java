@@ -218,7 +218,7 @@ class EvidenceCollection implements Serializable {
      * @param str to add to the weighting collection.
      */
     public synchronized void addVendorWeighting(String str) {
-        vendorWeightings.add(str);
+        vendorWeightings.add(str.toLowerCase());
     }
 
     /**
@@ -237,7 +237,7 @@ class EvidenceCollection implements Serializable {
      * @param str to add to the weighting collection.
      */
     public synchronized void addProductWeighting(String str) {
-        productWeightings.add(str);
+        productWeightings.add(str.toLowerCase());
     }
 
     /**
@@ -387,7 +387,7 @@ class EvidenceCollection implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || getClass() != obj.getClass()) {
+        if (obj == null || !(obj instanceof EvidenceCollection)) {
             return false;
         }
         final EvidenceCollection other = (EvidenceCollection) obj;

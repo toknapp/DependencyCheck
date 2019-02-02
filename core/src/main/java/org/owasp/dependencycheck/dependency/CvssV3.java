@@ -186,7 +186,7 @@ public class CvssV3 {
 
     @Override
     public String toString() {
-        return String.format("CVSS:3.0/AV:%s/AC:%s/PR:%s/UI:%s/S:%s/C:%s/I:%s/A:%s",
+        return String.format("/AV:%s/AC:%s/PR:%s/UI:%s/S:%s/C:%s/I:%s/A:%s",
                 attackVector == null ? "" : attackVector.substring(0, 1),
                 attackComplexity == null ? "" : attackComplexity.substring(0, 1),
                 privilegesRequired == null ? "" : privilegesRequired.substring(0, 1),

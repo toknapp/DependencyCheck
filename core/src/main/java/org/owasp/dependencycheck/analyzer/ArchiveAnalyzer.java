@@ -272,18 +272,16 @@ public class ArchiveAnalyzer extends AbstractFileTypeAnalyzer {
                         extractAndAnalyze(d, engine, scanDepth + 1);
                     }
                 } else {
-                    for (Dependency sub : dependencySet) {
-                        if (sub.getFilePath().startsWith(tmpDir.getAbsolutePath())) {
-                            final String displayPath = String.format("%s%s",
-                                    dependency.getFilePath(),
-                                    sub.getActualFilePath().substring(tmpDir.getAbsolutePath().length()));
-                            final String displayName = String.format("%s: %s",
-                                    dependency.getFileName(),
-                                    sub.getFileName());
-                            sub.setFilePath(displayPath);
-                            sub.setFileName(displayName);
-                        }
-                    }
+                    dependencySet.stream().filter((sub) -> (sub.getFilePath().startsWith(tmpDir.getAbsolutePath()))).forEach((sub) -> {
+                        final String displayPath = String.format("%s%s",
+                                dependency.getFilePath(),
+                                sub.getActualFilePath().substring(tmpDir.getAbsolutePath().length()));
+                        final String displayName = String.format("%s: %s",
+                                dependency.getFileName(),
+                                sub.getFileName());
+                        sub.setFilePath(displayPath);
+                        sub.setFileName(displayName);
+                    });
                 }
             }
         }
@@ -320,20 +318,18 @@ public class ArchiveAnalyzer extends AbstractFileTypeAnalyzer {
                 org.apache.commons.io.FileUtils.copyFile(dependency.getActualFile(), tmpLoc);
                 final List<Dependency> dependencySet = findMoreDependencies(engine, tmpLoc);
                 if (dependencySet != null && !dependencySet.isEmpty()) {
-                    for (Dependency d : dependencySet) {
+                    dependencySet.forEach((d) -> {
                         //fix the dependency's display name and path
                         if (d.getActualFile().equals(tmpLoc)) {
                             d.setFilePath(dependency.getFilePath());
                             d.setDisplayFileName(dependency.getFileName());
                         } else {
-                            for (Dependency sub : d.getRelatedDependencies()) {
-                                if (sub.getActualFile().equals(tmpLoc)) {
-                                    sub.setFilePath(dependency.getFilePath());
-                                    sub.setDisplayFileName(dependency.getFileName());
-                                }
-                            }
+                            d.getRelatedDependencies().stream().filter((rel) -> (rel.getActualFile().equals(tmpLoc))).forEach((rel) -> {
+                                rel.setFilePath(dependency.getFilePath());
+                                rel.setDisplayFileName(dependency.getFileName());
+                            });
                         }
-                    }
+                    });
                 }
             } catch (IOException ex) {
                 LOGGER.debug("Unable to perform deep copy on '{}'", dependency.getActualFile().getPath(), ex);

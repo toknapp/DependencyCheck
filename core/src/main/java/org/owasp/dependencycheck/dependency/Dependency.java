@@ -752,6 +752,7 @@ public class Dependency extends EvidenceCollection implements Serializable {
      *
      * @param dependency a reference to the related dependency
      */
+    @SuppressWarnings("ReferenceEquality")
     public synchronized void addRelatedDependency(Dependency dependency) {
         if (this == dependency) {
             LOGGER.warn("Attempted to add a circular reference - please post the log file to issue #172 here "
@@ -810,7 +811,7 @@ public class Dependency extends EvidenceCollection implements Serializable {
      */
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || getClass() != obj.getClass()) {
+        if (obj == null || !(obj instanceof Dependency)) {
             return false;
         }
         final Dependency other = (Dependency) obj;
@@ -872,7 +873,7 @@ public class Dependency extends EvidenceCollection implements Serializable {
      * @return the string representation of the file
      */
     @Override
-    public String toString() {
+    public synchronized String toString() {
         return "Dependency{ fileName='" + fileName + "', actualFilePath='" + actualFilePath
                 + "', filePath='" + filePath + "', packagePath='" + packagePath + "'}";
     }

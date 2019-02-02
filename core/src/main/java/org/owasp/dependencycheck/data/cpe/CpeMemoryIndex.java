@@ -28,9 +28,11 @@ import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -203,13 +205,21 @@ public final class CpeMemoryIndex implements AutoCloseable {
      */
     private void buildIndex(CveDB cve) throws IndexException {
         try (Analyzer analyzer = createSearchingAnalyzer();
-                IndexWriter indexWriter = new IndexWriter(index, new IndexWriterConfig(analyzer))) {
+                IndexWriter indexWriter = new IndexWriter(index,
+                        new IndexWriterConfig(analyzer))) {//.setSimilarity(similarity))) {
+
+            FieldType ft = new FieldType(TextField.TYPE_STORED);
+            //ignore term frequency
+            ft.setIndexOptions(IndexOptions.DOCS);
+            //ignore field length normalization
+            ft.setOmitNorms(true);
             // Tip: reuse the Document and Fields for performance...
             // See "Re-use Document and Field instances" from
             // http://wiki.apache.org/lucene-java/ImproveIndexingSpeed
             final Document doc = new Document();
-            final Field v = new TextField(Fields.VENDOR, Fields.VENDOR, Field.Store.YES);
-            final Field p = new TextField(Fields.PRODUCT, Fields.PRODUCT, Field.Store.YES);
+            final Field v = new Field(Fields.VENDOR, Fields.VENDOR, ft);
+            final Field p = new Field(Fields.PRODUCT, Fields.PRODUCT, ft);
+
             doc.add(v);
             doc.add(p);
 
@@ -219,11 +229,11 @@ public final class CpeMemoryIndex implements AutoCloseable {
                     v.setStringValue(pair.getLeft());
                     p.setStringValue(pair.getRight());
                     indexWriter.addDocument(doc);
-                    productFieldAnalyzer.reset();
-                    vendorFieldAnalyzer.reset();
+                    resetAnalyzers();
                 }
             }
             indexWriter.commit();
+
         } catch (DatabaseException ex) {
             LOGGER.debug("", ex);
             throw new IndexException("Error reading CPE data", ex);
@@ -239,13 +249,13 @@ public final class CpeMemoryIndex implements AutoCloseable {
      * @param maxQueryResults the maximum number of documents to return
      * @return the TopDocs found by the search
      * @throws ParseException thrown when the searchString is invalid
+     * @throws IndexException thrown when there is an internal error resetting
+     * the search analyzer
      * @throws IOException is thrown if there is an issue with the underlying
      * Index
      */
-    public synchronized TopDocs search(String searchString, int maxQueryResults) throws ParseException, IOException {
+    public synchronized TopDocs search(String searchString, int maxQueryResults) throws ParseException, IndexException, IOException {
         final Query query = parseQuery(searchString);
-        productFieldAnalyzer.reset();
-        vendorFieldAnalyzer.reset();
         return search(query, maxQueryResults);
     }
 
@@ -255,13 +265,21 @@ public final class CpeMemoryIndex implements AutoCloseable {
      * @param searchString the search text
      * @return the Query object
      * @throws ParseException thrown if the search text cannot be parsed
+     * @throws IndexException thrown if there is an error resetting the
+     * analyzers
      */
-    protected Query parseQuery(String searchString) throws ParseException {
+    public synchronized Query parseQuery(String searchString) throws ParseException, IndexException {
         if (searchString == null || searchString.trim().isEmpty()) {
             throw new ParseException("Query is null or empty");
         }
         LOGGER.debug(searchString);
+
         final Query query = queryParser.parse(searchString);
+        try {
+            resetAnalyzers();
+        } catch (IOException ex) {
+            throw new IndexException("Unable to reset the analyzer after parsing", ex);
+        }
         return query;
     }
 
@@ -299,5 +317,14 @@ public final class CpeMemoryIndex implements AutoCloseable {
             return -1;
         }
         return indexReader.numDocs();
+    }
+
+    public synchronized String explain(Query query, int doc) throws IOException {
+        return indexSearcher.explain(query, doc).toString();
+    }
+
+    protected synchronized void resetAnalyzers() throws IOException {
+        productFieldAnalyzer.reset();
+        vendorFieldAnalyzer.reset();
     }
 }

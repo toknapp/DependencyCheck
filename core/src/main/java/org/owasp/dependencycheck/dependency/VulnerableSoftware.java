@@ -322,4 +322,43 @@ public class VulnerableSoftware extends Cpe implements Serializable {
         return vulnerable;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(this.toCpe23FS());
+        boolean textAdded = false;
+        if (versionStartIncluding != null && !versionStartIncluding.isEmpty()) {
+            sb.append(" versions from (including) ")
+                    .append(versionStartIncluding);
+        }
+        if (versionStartExcluding != null && !versionStartExcluding.isEmpty()) {
+            if (textAdded) {
+                sb.append(";");
+            }
+            sb.append(" versions from (excluding) ")
+                    .append(versionStartExcluding);
+        }
+        if (versionEndIncluding != null && !versionEndIncluding.isEmpty()) {
+            if (textAdded) {
+                sb.append(";");
+            }
+            sb.append(" versions up to (including) ")
+                    .append(versionEndIncluding);
+        }
+        if (versionEndExcluding != null && !versionEndExcluding.isEmpty()) {
+            if (textAdded) {
+                sb.append(";");
+            }
+            sb.append(" versions up to (excluding) ")
+                    .append(versionEndExcluding);
+        }
+        if (!vulnerable) {
+            if (textAdded) {
+                sb.append(";");
+            }
+            sb.append(" version is NOT VULNERABLE");
+        }
+        return sb.toString();
+    }
+
 }
