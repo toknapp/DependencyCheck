@@ -1,5 +1,5 @@
 language: java
-dist: xenial
+group: deprecated-2017Q4
 
 env:
   global:
@@ -12,19 +12,11 @@ env:
 addons:
   apt:
     packages:
-      - oraclejdk8
       - jq
   sonarcloud:
     organization: "odc"
     token:
       secure: "YVDnYmonPug885Hmr2pLWBko+rQ+oKyTUA95ry0PGGyfgs0z6kPCjmWBDVm7K4GM7NOluldWb5gLMf0QXoHGstdp9L6fQCQElt8hZMOwJf+IR3bWjiG3VfVyyB3gJWBWlcJFM9NVyfICidwBH5ZiJ0+LXhKUgnNqarTh/YmNj9w="
-
-before_install:
-  # download and source jdk_switcher
-  # then switch to OpenJDK8
-  - wget https://raw.githubusercontent.com/michaelklishin/jdk_switcher/master/jdk_switcher.sh
-  - . ./jdk_switcher.sh
-  - jdk_switcher use openjdk8
 
 cache:
   directories:
