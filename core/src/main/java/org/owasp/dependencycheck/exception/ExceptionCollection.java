@@ -36,6 +36,7 @@ public class ExceptionCollection extends Exception {
      */
     private static final long serialVersionUID = -3032674811026089923L;
 
+    private static final String MSG = "One or more exceptions occurred during analysis:";
     /**
      * A collection of exceptions.
      */
@@ -52,18 +53,7 @@ public class ExceptionCollection extends Exception {
      * @param exceptions a list of exceptions
      */
     public ExceptionCollection(List<Throwable> exceptions) {
-        super();
-        this.exceptions = exceptions;
-    }
-
-    /**
-     * Instantiates a new exception collection.
-     *
-     * @param msg the exception message
-     * @param exceptions a list of exceptions
-     */
-    public ExceptionCollection(String msg, List<Throwable> exceptions) {
-        super(msg);
+        super(MSG);
         this.exceptions = exceptions;
     }
 
@@ -75,7 +65,7 @@ public class ExceptionCollection extends Exception {
      * meaning that no analysis was performed.
      */
     public ExceptionCollection(List<Throwable> exceptions, boolean fatal) {
-        super();
+        super(MSG);
         this.exceptions = exceptions;
         this.fatal = fatal;
     }
@@ -83,49 +73,46 @@ public class ExceptionCollection extends Exception {
     /**
      * Instantiates a new exception collection.
      *
-     * @param msg the exception message
-     * @param exceptions a list of exceptions
-     * @param fatal indicates if any of the exceptions that occurred is fatal -
-     * meaning that no analysis was performed.
-     */
-    public ExceptionCollection(String msg, List<Throwable> exceptions, boolean fatal) {
-        super(msg);
-        this.exceptions = exceptions;
-        this.fatal = fatal;
-    }
-
-    /**
-     * Instantiates a new exception collection.
-     *
-     * @param exceptions a list of exceptions
+     * @param exception a list of exceptions
      * @param fatal indicates if the exception that occurred is fatal - meaning
      * that no analysis was performed.
      */
-    public ExceptionCollection(Throwable exceptions, boolean fatal) {
-        super();
-        this.exceptions = new ArrayList<>();
-        this.exceptions.add(exceptions);
-        this.fatal = fatal;
+    public ExceptionCollection(Throwable exception, boolean fatal) {
+        super(MSG);
+        if (exception instanceof ExceptionCollection) {
+            ExceptionCollection other = ((ExceptionCollection) exception);
+            this.exceptions = other.getExceptions();
+            this.fatal = other.isFatal();
+        } else {
+            this.exceptions = new ArrayList<>();
+            this.exceptions.add(exception);
+            this.fatal = fatal;
+        }
     }
 
     /**
      * Instantiates a new exception collection.
      *
-     * @param msg the exception message
      * @param exception a list of exceptions
      */
-    public ExceptionCollection(String msg, Throwable exception) {
-        super(msg);
-        this.exceptions = new ArrayList<>();
-        this.exceptions.add(exception);
-        this.fatal = false;
+    public ExceptionCollection(Throwable exception) {
+        super(MSG);
+        if (exception instanceof ExceptionCollection) {
+            ExceptionCollection other = ((ExceptionCollection) exception);
+            this.exceptions = other.getExceptions();
+            this.fatal = other.isFatal();
+        } else {
+            this.exceptions = new ArrayList<>();
+            this.exceptions.add(exception);
+            this.fatal = false;
+        }
     }
 
     /**
      * Instantiates a new exception collection.
      */
     public ExceptionCollection() {
-        super();
+        super(MSG);
         this.exceptions = new ArrayList<>();
     }
 
@@ -183,12 +170,12 @@ public class ExceptionCollection extends Exception {
      */
     @Override
     public void printStackTrace(PrintWriter s) {
-        s.println("Multiple Exceptions Occurred");
+        s.println(MSG);
         super.printStackTrace(s);
-        for (Throwable t : this.exceptions) {
+        this.exceptions.forEach((t) -> {
             s.println("Next Exception:");
             t.printStackTrace(s);
-        }
+        });
     }
 
     /**
@@ -198,12 +185,12 @@ public class ExceptionCollection extends Exception {
      */
     @Override
     public void printStackTrace(PrintStream s) {
-        s.println("Multiple Exceptions Occurred");
+        s.println(MSG);
         super.printStackTrace(s);
-        for (Throwable t : this.exceptions) {
+        this.exceptions.forEach((t) -> {
             s.println("Next Exception:");
             t.printStackTrace(s);
-        }
+        });
     }
 
     /**
@@ -216,14 +203,10 @@ public class ExceptionCollection extends Exception {
     public String getMessage() {
         final StringBuilder sb = new StringBuilder();
         final String msg = super.getMessage();
-        if (msg == null || msg.isEmpty()) {
-            sb.append("One or more exceptions occurred during analysis:");
-        } else {
-            sb.append(msg);
-        }
-        for (Throwable t : this.exceptions) {
+
+        this.exceptions.forEach((t) -> {
             sb.append("\n\t").append(t.getMessage());
-        }
+        });
         return sb.toString();
     }
 }

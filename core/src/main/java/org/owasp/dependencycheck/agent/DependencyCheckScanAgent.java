@@ -871,7 +871,7 @@ public class DependencyCheckScanAgent {
             try {
                 engine.doUpdates();
             } catch (UpdateException ex) {
-                throw new ExceptionCollection("Unable to perform update", ex);
+                throw new ExceptionCollection(ex);
             } finally {
                 engine.close();
             }

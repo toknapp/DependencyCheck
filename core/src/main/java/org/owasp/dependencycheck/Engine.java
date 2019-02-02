@@ -687,7 +687,7 @@ public class Engine implements FileFilter, AutoCloseable {
         final long analysisDurationSeconds = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - analysisStart);
         LOGGER.info("Analysis Complete ({} seconds)", analysisDurationSeconds);
         if (exceptions.size() > 0) {
-            throw new ExceptionCollection("One or more exceptions occurred during dependency-check analysis", exceptions);
+            throw new ExceptionCollection(exceptions);
         }
     }
 
@@ -724,7 +724,7 @@ public class Engine implements FileFilter, AutoCloseable {
                 } else {
                     msg = "Unable to connect to the database";
                 }
-                throw new ExceptionCollection("Unable to connect to the database", ex);
+                throw new ExceptionCollection(ex);
             }
         } else {
             try {
@@ -1090,7 +1090,7 @@ public class Engine implements FileFilter, AutoCloseable {
         LOGGER.error("{}\n\n{}", throwable.getMessage(), message);
         LOGGER.debug("", throwable);
         exceptions.add(throwable);
-        throw new ExceptionCollection(message, exceptions, true);
+        throw new ExceptionCollection(exceptions, true);
     }
 
     /**

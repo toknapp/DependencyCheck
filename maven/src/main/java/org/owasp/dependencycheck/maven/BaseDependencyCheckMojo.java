@@ -838,7 +838,7 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
         } catch (DependencyGraphBuilderException ex) {
             final String msg = String.format("Unable to build dependency graph on project %s", project.getName());
             getLog().debug(msg, ex);
-            return new ExceptionCollection(msg, ex);
+            return new ExceptionCollection(ex);
         }
     }
 
@@ -1292,7 +1292,7 @@ public abstract class BaseDependencyCheckMojo extends AbstractMojo implements Ma
                     engine.writeReports(p.getName(), p.getGroupId(), p.getArtifactId(), p.getVersion(), outputDir, getFormat());
                 } catch (ReportException ex) {
                     if (exCol == null) {
-                        exCol = new ExceptionCollection("Error writing aggregate report", ex);
+                        exCol = new ExceptionCollection(ex);
                     } else {
                         exCol.addException(ex);
                     }
