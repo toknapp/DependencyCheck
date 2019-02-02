@@ -10,6 +10,9 @@ env:
     - secure: "Bh5LAk8XQnJ885jc/Lli2fhPKDx0TNZRxcJMnNo96EgwOnD+Zhw+v3u/DMCgyyrRToM8Bkca/HktrlZaRTk2htsdKZZ3RHFMCXO0fXCgpcf+wkaSYDF/lnErpSJG3Lrz8ILxJPODsrGhjaIg2++79lwhsBYtpujc6UdxFhgpffc="
 
 addons:
+  apt:
+    packages:
+      - oraclejdk8
   sonarcloud:
     organization: "odc"
     token:
