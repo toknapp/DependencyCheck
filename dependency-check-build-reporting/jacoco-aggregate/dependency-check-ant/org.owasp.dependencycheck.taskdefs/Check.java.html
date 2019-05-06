@@ -1,0 +1,1532 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Check.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Dependency-Check Build-Reporting</a> &gt; <a href="../index.html" class="el_bundle">dependency-check-ant</a> &gt; <a href="index.source.html" class="el_package">org.owasp.dependencycheck.taskdefs</a> &gt; <span class="el_source">Check.java</span></div><h1>Check.java</h1><pre class="source lang-java linenums">/*
+ * This file is part of dependency-check-ant.
+ *
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Copyright (c) 2013 Jeremy Long. All Rights Reserved.
+ */
+package org.owasp.dependencycheck.taskdefs;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.concurrent.NotThreadSafe;
+
+import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.Project;
+import org.apache.tools.ant.types.EnumeratedAttribute;
+import org.apache.tools.ant.types.Reference;
+import org.apache.tools.ant.types.Resource;
+import org.apache.tools.ant.types.ResourceCollection;
+import org.apache.tools.ant.types.resources.FileProvider;
+import org.apache.tools.ant.types.resources.Resources;
+import org.owasp.dependencycheck.Engine;
+import org.owasp.dependencycheck.agent.DependencyCheckScanAgent;
+import org.owasp.dependencycheck.data.nvdcve.DatabaseException;
+import org.owasp.dependencycheck.dependency.Dependency;
+import org.owasp.dependencycheck.dependency.Vulnerability;
+import org.owasp.dependencycheck.exception.ExceptionCollection;
+import org.owasp.dependencycheck.exception.ReportException;
+import org.owasp.dependencycheck.reporting.ReportGenerator.Format;
+import org.owasp.dependencycheck.utils.Settings;
+import org.slf4j.impl.StaticLoggerBinder;
+
+/**
+ * An Ant task definition to execute dependency-check during an Ant build.
+ *
+ * @author Jeremy Long
+ */
+@NotThreadSafe
+public class Check extends Update {
+
+    /**
+     * Whether the ruby gemspec analyzer should be enabled.
+     */
+    private Boolean rubygemsAnalyzerEnabled;
+    /**
+     * Whether or not the Node.js Analyzer is enabled.
+     */
+    private Boolean nodeAnalyzerEnabled;
+    /**
+     * Whether or not the Node Audit Analyzer is enabled.
+     */
+    private Boolean nodeAuditAnalyzerEnabled;
+    /**
+     * Whether or not the RetireJS Analyzer is enabled.
+     */
+    private Boolean retireJsAnalyzerEnabled;
+    /**
+     * The URL to the RetireJS JSON data.
+     */
+    private String retireJsUrl;
+    /**
+     * The list of filters (regular expressions) used by the RetireJS Analyzer
+     * to exclude files that contain matching content..
+     */
+<span class="fc" id="L76">    @SuppressWarnings(&quot;CanBeFinal&quot;)</span>
+    private List&lt;String&gt; retirejsFilters = new ArrayList&lt;&gt;();
+    /**
+     * Whether or not the RetireJS Analyzer filters non-vulnerable JS files from
+     * the report; default is false.
+     */
+    private Boolean retirejsFilterNonVulnerable;
+    /**
+     * Whether or not the Ruby Bundle Audit Analyzer is enabled.
+     */
+    private Boolean bundleAuditAnalyzerEnabled;
+    /**
+     * Whether the CMake analyzer should be enabled.
+     */
+    private Boolean cmakeAnalyzerEnabled;
+    /**
+     * Whether or not the Open SSL analyzer is enabled.
+     */
+    private Boolean opensslAnalyzerEnabled;
+    /**
+     * Whether the python package analyzer should be enabled.
+     */
+    private Boolean pyPackageAnalyzerEnabled;
+    /**
+     * Whether the python distribution analyzer should be enabled.
+     */
+    private Boolean pyDistributionAnalyzerEnabled;
+    /**
+     * Whether or not the central analyzer is enabled.
+     */
+    private Boolean centralAnalyzerEnabled;
+    /**
+     * Whether or not the nexus analyzer is enabled.
+     */
+    private Boolean nexusAnalyzerEnabled;
+    /**
+     * The URL of a Nexus server's REST API end point
+     * (http://domain/nexus/service/local).
+     */
+    private String nexusUrl;
+    /**
+     * The username to authenticate to the Nexus Server's REST API Endpoint.
+     */
+    private String nexusUser;
+    /**
+     * The password to authenticate to the Nexus Server's REST API Endpoint.
+     */
+    private String nexusPassword;
+    /**
+     * Whether or not the defined proxy should be used when connecting to Nexus.
+     */
+    private Boolean nexusUsesProxy;
+    /**
+     * Additional ZIP File extensions to add analyze. This should be a
+     * comma-separated list of file extensions to treat like ZIP files.
+     */
+    private String zipExtensions;
+    /**
+     * The path to dotnet core for .NET assembly analysis.
+     */
+    private String pathToCore;
+    /**
+     * The name of the project being analyzed.
+     */
+<span class="fc" id="L140">    private String projectName = &quot;dependency-check&quot;;</span>
+    /**
+     * Specifies the destination directory for the generated Dependency-Check
+     * report.
+     */
+<span class="fc" id="L145">    private String reportOutputDirectory = &quot;.&quot;;</span>
+    /**
+     * If using the JUNIT report format the junitFailOnCVSS sets the CVSS score
+     * threshold that is considered a failure. The default is 0.
+     */
+<span class="fc" id="L150">    private float junitFailOnCVSS = 0;</span>
+    /**
+     * Specifies if the build should be failed if a CVSS score above a specified
+     * level is identified. The default is 11 which means since the CVSS scores
+     * are 0-10, by default the build will never fail and the CVSS score is set
+     * to 11. The valid range for the fail build on CVSS is 0 to 11, where
+     * anything above 10 will not cause the build to fail.
+     */
+<span class="fc" id="L158">    private float failBuildOnCVSS = 11;</span>
+    /**
+     * Sets whether auto-updating of the NVD CVE/CPE data is enabled. It is not
+     * recommended that this be turned to false. Default is true.
+     */
+    private Boolean autoUpdate;
+    /**
+     * The report format to be generated (HTML, XML, JUNIT, CSV, JSON, ALL).
+     * Default is HTML.
+     */
+<span class="fc" id="L168">    private String reportFormat = &quot;HTML&quot;;</span>
+    /**
+     * The report format to be generated (HTML, XML, JUNIT, CSV, JSON, ALL).
+     * Default is HTML.
+     */
+<span class="fc" id="L173">    private final List&lt;String&gt; reportFormats = new ArrayList&lt;&gt;();</span>
+    /**
+     * Suppression file path.
+     */
+<span class="fc" id="L177">    private String suppressionFile = null;</span>
+    /**
+     * Suppression file paths.
+     */
+<span class="fc" id="L181">    @SuppressWarnings(&quot;CanBeFinal&quot;)</span>
+    private List&lt;String&gt; suppressionFiles = new ArrayList&lt;&gt;();
+
+    /**
+     * The path to the suppression file.
+     */
+    private String hintsFile;
+    /**
+     * flag indicating whether or not to show a summary of findings.
+     */
+<span class="fc" id="L191">    private boolean showSummary = true;</span>
+    /**
+     * Whether experimental analyzers are enabled.
+     */
+    private Boolean enableExperimental;
+    /**
+     * Whether retired analyzers are enabled.
+     */
+    private Boolean enableRetired;
+    /**
+     * Whether or not the Jar Analyzer is enabled.
+     */
+    private Boolean jarAnalyzerEnabled;
+    /**
+     * Whether or not the Archive Analyzer is enabled.
+     */
+    private Boolean archiveAnalyzerEnabled;
+    /**
+     * Whether or not the .NET Nuspec Analyzer is enabled.
+     */
+    private Boolean nuspecAnalyzerEnabled;
+    /**
+     * Whether or not the .NET Nuget packages.config file Analyzer is enabled.
+     */
+    private Boolean nugetconfAnalyzerEnabled;
+    /**
+     * Whether or not the PHP Composer Analyzer is enabled.
+     */
+    private Boolean composerAnalyzerEnabled;
+
+    /**
+     * Whether or not the .NET Assembly Analyzer is enabled.
+     */
+    private Boolean assemblyAnalyzerEnabled;
+    /**
+     * Whether the autoconf analyzer should be enabled.
+     */
+    private Boolean autoconfAnalyzerEnabled;
+    /**
+     * Sets the path for the bundle-audit binary.
+     */
+    private String bundleAuditPath;
+    /**
+     * Whether or not the CocoaPods Analyzer is enabled.
+     */
+    private Boolean cocoapodsAnalyzerEnabled;
+
+    /**
+     * Whether or not the Swift package Analyzer is enabled.
+     */
+    private Boolean swiftPackageManagerAnalyzerEnabled;
+
+    /**
+     * Whether or not the Sonatype OSS Index analyzer is enabled.
+     */
+    private Boolean ossindexAnalyzerEnabled;
+
+    /**
+     * URL of the Sonatype OSS Index service.
+     */
+    private String ossindexAnalyzerUrl;
+
+    /**
+     * Whether or not the Artifactory Analyzer is enabled.
+     */
+    private Boolean artifactoryAnalyzerEnabled;
+    /**
+     * The URL to Artifactory.
+     */
+    private String artifactoryAnalyzerUrl;
+    /**
+     * Whether or not Artifactory analysis should use the proxy..
+     */
+    private Boolean artifactoryAnalyzerUseProxy;
+    /**
+     * Whether or not Artifactory analysis should be parallelized.
+     */
+    private Boolean artifactoryAnalyzerParallelAnalysis;
+    /**
+     * The Artifactory username needed to connect.
+     */
+    private String artifactoryAnalyzerUsername;
+    /**
+     * The Artifactory API token needed to connect.
+     */
+    private String artifactoryAnalyzerApiToken;
+    /**
+     * The Artifactory bearer token.
+     */
+    private String artifactoryAnalyzerBearerToken;
+
+    //The following code was copied Apache Ant PathConvert
+    //BEGIN COPY from org.apache.tools.ant.taskdefs.PathConvert
+    /**
+     * Path to be converted
+     */
+<span class="fc" id="L287">    private Resources path = null;</span>
+    /**
+     * Reference to path/file set to convert
+     */
+<span class="fc" id="L291">    private Reference refId = null;</span>
+
+    /**
+     * Add an arbitrary ResourceCollection.
+     *
+     * @param rc the ResourceCollection to add.
+     * @since Ant 1.7
+     */
+    public void add(ResourceCollection rc) {
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">        if (isReference()) {</span>
+<span class="nc" id="L301">            throw new BuildException(&quot;Nested elements are not allowed when using the refId attribute.&quot;);</span>
+        }
+<span class="fc" id="L303">        getPath().add(rc);</span>
+<span class="fc" id="L304">    }</span>
+
+    /**
+     * Add a suppression file.
+     * &lt;p&gt;
+     * This is called by Ant with the configured {@link SuppressionFile}.
+     *
+     * @param suppressionFile the suppression file to add.
+     */
+    public void addConfiguredSuppressionFile(final SuppressionFile suppressionFile) {
+<span class="fc" id="L314">        suppressionFiles.add(suppressionFile.getPath());</span>
+<span class="fc" id="L315">    }</span>
+
+    /**
+     * Returns the path. If the path has not been initialized yet, this class is
+     * synchronized, and will instantiate the path object.
+     *
+     * @return the path
+     */
+    private synchronized Resources getPath() {
+<span class="fc bfc" id="L324" title="All 2 branches covered.">        if (path == null) {</span>
+<span class="fc" id="L325">            path = new Resources(getProject());</span>
+<span class="fc" id="L326">            path.setCache(true);</span>
+        }
+<span class="fc" id="L328">        return path;</span>
+    }
+
+    /**
+     * Learn whether the refId attribute of this element been set.
+     *
+     * @return true if refId is valid.
+     */
+    public boolean isReference() {
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">        return refId != null;</span>
+    }
+
+    /**
+     * Add a reference to a Path, FileSet, DirSet, or FileList defined
+     * elsewhere.
+     *
+     * @param r the reference to a path, fileset, dirset or filelist.
+     */
+    public synchronized void setRefId(Reference r) {
+<span class="nc bnc" id="L347" title="All 2 branches missed.">        if (path != null) {</span>
+<span class="nc" id="L348">            throw new BuildException(&quot;Nested elements are not allowed when using the refId attribute.&quot;);</span>
+        }
+<span class="nc" id="L350">        refId = r;</span>
+<span class="nc" id="L351">    }</span>
+
+    /**
+     * If this is a reference, this method will add the referenced resource
+     * collection to the collection of paths.
+     *
+     * @throws BuildException if the reference is not to a resource collection
+     */
+    private void dealWithReferences() throws BuildException {
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">        if (isReference()) {</span>
+<span class="nc" id="L361">            final Object o = refId.getReferencedObject(getProject());</span>
+<span class="nc bnc" id="L362" title="All 2 branches missed.">            if (!(o instanceof ResourceCollection)) {</span>
+<span class="nc" id="L363">                throw new BuildException(&quot;refId '&quot; + refId.getRefId()</span>
+                        + &quot;' does not refer to a resource collection.&quot;);
+            }
+<span class="nc" id="L366">            getPath().add((ResourceCollection) o);</span>
+        }
+<span class="fc" id="L368">    }</span>
+    // END COPY from org.apache.tools.ant.taskdefs
+
+    /**
+     * Construct a new DependencyCheckTask.
+     */
+    public Check() {
+<span class="fc" id="L375">        super();</span>
+        // Call this before Dependency Check Core starts logging anything - this way, all SLF4J messages from
+        // core end up coming through this tasks logger
+<span class="fc" id="L378">        StaticLoggerBinder.getSingleton().setTask(this);</span>
+<span class="fc" id="L379">    }</span>
+
+    /**
+     * Get the value of projectName.
+     *
+     * @return the value of projectName
+     */
+    public String getProjectName() {
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">        if (projectName == null) {</span>
+<span class="nc" id="L388">            projectName = &quot;&quot;;</span>
+        }
+<span class="fc" id="L390">        return projectName;</span>
+    }
+
+    /**
+     * Set the value of projectName.
+     *
+     * @param projectName new value of projectName
+     */
+    public void setProjectName(String projectName) {
+<span class="fc" id="L399">        this.projectName = projectName;</span>
+<span class="fc" id="L400">    }</span>
+
+    /**
+     * Get the value of reportOutputDirectory.
+     *
+     * @return the value of reportOutputDirectory
+     */
+    public String getReportOutputDirectory() {
+<span class="nc" id="L408">        return reportOutputDirectory;</span>
+    }
+
+    /**
+     * Set the value of reportOutputDirectory.
+     *
+     * @param reportOutputDirectory new value of reportOutputDirectory
+     */
+    public void setReportOutputDirectory(String reportOutputDirectory) {
+<span class="fc" id="L417">        this.reportOutputDirectory = reportOutputDirectory;</span>
+<span class="fc" id="L418">    }</span>
+
+    /**
+     * Get the value of failBuildOnCVSS.
+     *
+     * @return the value of failBuildOnCVSS
+     */
+    public float getFailBuildOnCVSS() {
+<span class="nc" id="L426">        return failBuildOnCVSS;</span>
+    }
+
+    /**
+     * Set the value of failBuildOnCVSS.
+     *
+     * @param failBuildOnCVSS new value of failBuildOnCVSS
+     */
+    public void setFailBuildOnCVSS(float failBuildOnCVSS) {
+<span class="fc" id="L435">        this.failBuildOnCVSS = failBuildOnCVSS;</span>
+<span class="fc" id="L436">    }</span>
+
+    /**
+     * Get the value of junitFailOnCVSS.
+     *
+     * @return the value of junitFailOnCVSS
+     */
+    public float getJunitFailOnCVSS() {
+<span class="nc" id="L444">        return junitFailOnCVSS;</span>
+    }
+
+    /**
+     * Set the value of junitFailOnCVSS.
+     *
+     * @param junitFailOnCVSS new value of junitFailOnCVSS
+     */
+    public void setJunitFailOnCVSS(float junitFailOnCVSS) {
+<span class="nc" id="L453">        this.junitFailOnCVSS = junitFailOnCVSS;</span>
+<span class="nc" id="L454">    }</span>
+
+    /**
+     * Get the value of autoUpdate.
+     *
+     * @return the value of autoUpdate
+     */
+    public Boolean isAutoUpdate() {
+<span class="nc" id="L462">        return autoUpdate;</span>
+    }
+
+    /**
+     * Set the value of autoUpdate.
+     *
+     * @param autoUpdate new value of autoUpdate
+     */
+    public void setAutoUpdate(Boolean autoUpdate) {
+<span class="fc" id="L471">        this.autoUpdate = autoUpdate;</span>
+<span class="fc" id="L472">    }</span>
+
+    /**
+     * Set the value of reportFormat.
+     *
+     * @param reportFormat new value of reportFormat
+     */
+    public void setReportFormat(ReportFormats reportFormat) {
+<span class="fc" id="L480">        this.reportFormat = reportFormat.getValue();</span>
+<span class="fc" id="L481">        this.reportFormats.add(this.reportFormat);</span>
+<span class="fc" id="L482">    }</span>
+
+    /**
+     * Get the value of reportFormats.
+     *
+     * @return the value of reportFormats
+     */
+    public List&lt;String&gt; getReportFormats() {
+<span class="fc bfc" id="L490" title="All 2 branches covered.">        if (reportFormats.isEmpty()) {</span>
+<span class="fc" id="L491">            this.reportFormats.add(this.reportFormat);</span>
+        }
+<span class="fc" id="L493">        return this.reportFormats;</span>
+    }
+
+    /**
+     * Gets suppression file paths.
+     *
+     * @return the suppression files.
+     */
+    public List&lt;String&gt; getSuppressionFiles() {
+<span class="nc" id="L502">        return suppressionFiles;</span>
+    }
+
+    /**
+     * Set the value of suppressionFile.
+     *
+     * @param suppressionFile new value of suppressionFile
+     */
+    public void setSuppressionFile(String suppressionFile) {
+<span class="fc" id="L511">        this.suppressionFile = suppressionFile;</span>
+<span class="fc" id="L512">        suppressionFiles.add(suppressionFile);</span>
+<span class="fc" id="L513">    }</span>
+
+    /**
+     * Get the value of hintsFile.
+     *
+     * @return the value of hintsFile
+     */
+    public String getHintsFile() {
+<span class="nc" id="L521">        return hintsFile;</span>
+    }
+
+    /**
+     * Set the value of hintsFile.
+     *
+     * @param hintsFile new value of hintsFile
+     */
+    public void setHintsFile(String hintsFile) {
+<span class="nc" id="L530">        this.hintsFile = hintsFile;</span>
+<span class="nc" id="L531">    }</span>
+
+    /**
+     * Get the value of showSummary.
+     *
+     * @return the value of showSummary
+     */
+    public boolean isShowSummary() {
+<span class="nc" id="L539">        return showSummary;</span>
+    }
+
+    /**
+     * Set the value of showSummary.
+     *
+     * @param showSummary new value of showSummary
+     */
+    public void setShowSummary(boolean showSummary) {
+<span class="nc" id="L548">        this.showSummary = showSummary;</span>
+<span class="nc" id="L549">    }</span>
+
+    /**
+     * Get the value of enableExperimental.
+     *
+     * @return the value of enableExperimental
+     */
+    public Boolean isEnableExperimental() {
+<span class="nc" id="L557">        return enableExperimental;</span>
+    }
+
+    /**
+     * Set the value of enableExperimental.
+     *
+     * @param enableExperimental new value of enableExperimental
+     */
+    public void setEnableExperimental(Boolean enableExperimental) {
+<span class="nc" id="L566">        this.enableExperimental = enableExperimental;</span>
+<span class="nc" id="L567">    }</span>
+
+    /**
+     * Get the value of enableRetired.
+     *
+     * @return the value of enableRetired
+     */
+    public Boolean isEnableRetired() {
+<span class="nc" id="L575">        return enableRetired;</span>
+    }
+
+    /**
+     * Set the value of enableRetired.
+     *
+     * @param enableRetired new value of enableRetired
+     */
+    public void setEnableRetired(Boolean enableRetired) {
+<span class="nc" id="L584">        this.enableRetired = enableRetired;</span>
+<span class="nc" id="L585">    }</span>
+
+    /**
+     * Returns whether or not the analyzer is enabled.
+     *
+     * @return true if the analyzer is enabled
+     */
+    public Boolean isJarAnalyzerEnabled() {
+<span class="nc" id="L593">        return jarAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Sets whether or not the analyzer is enabled.
+     *
+     * @param jarAnalyzerEnabled the value of the new setting
+     */
+    public void setJarAnalyzerEnabled(Boolean jarAnalyzerEnabled) {
+<span class="nc" id="L602">        this.jarAnalyzerEnabled = jarAnalyzerEnabled;</span>
+<span class="nc" id="L603">    }</span>
+
+    /**
+     * Returns whether or not the analyzer is enabled.
+     *
+     * @return true if the analyzer is enabled
+     */
+    public Boolean isArchiveAnalyzerEnabled() {
+<span class="nc" id="L611">        return archiveAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Sets whether or not the analyzer is enabled.
+     *
+     * @param archiveAnalyzerEnabled the value of the new setting
+     */
+    public void setArchiveAnalyzerEnabled(Boolean archiveAnalyzerEnabled) {
+<span class="nc" id="L620">        this.archiveAnalyzerEnabled = archiveAnalyzerEnabled;</span>
+<span class="nc" id="L621">    }</span>
+
+    /**
+     * Returns whether or not the analyzer is enabled.
+     *
+     * @return true if the analyzer is enabled
+     */
+    public Boolean isAssemblyAnalyzerEnabled() {
+<span class="nc" id="L629">        return assemblyAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Sets whether or not the analyzer is enabled.
+     *
+     * @param assemblyAnalyzerEnabled the value of the new setting
+     */
+    public void setAssemblyAnalyzerEnabled(Boolean assemblyAnalyzerEnabled) {
+<span class="nc" id="L638">        this.assemblyAnalyzerEnabled = assemblyAnalyzerEnabled;</span>
+<span class="nc" id="L639">    }</span>
+
+    /**
+     * Returns whether or not the analyzer is enabled.
+     *
+     * @return true if the analyzer is enabled
+     */
+    public Boolean isNuspecAnalyzerEnabled() {
+<span class="nc" id="L647">        return nuspecAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Returns whether or not the analyzer is enabled.
+     *
+     * @return true if the analyzer is enabled
+     */
+    public Boolean isNugetconfAnalyzerEnabled() {
+<span class="nc" id="L656">        return nugetconfAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Sets whether or not the analyzer is enabled.
+     *
+     * @param nuspecAnalyzerEnabled the value of the new setting
+     */
+    public void setNuspecAnalyzerEnabled(Boolean nuspecAnalyzerEnabled) {
+<span class="nc" id="L665">        this.nuspecAnalyzerEnabled = nuspecAnalyzerEnabled;</span>
+<span class="nc" id="L666">    }</span>
+
+    /**
+     * Sets whether or not the analyzer is enabled.
+     *
+     * @param nugetconfAnalyzerEnabled the value of the new setting
+     */
+    public void setNugetconfAnalyzerEnabled(Boolean nugetconfAnalyzerEnabled) {
+<span class="nc" id="L674">        this.nugetconfAnalyzerEnabled = nugetconfAnalyzerEnabled;</span>
+<span class="nc" id="L675">    }</span>
+
+    /**
+     * Get the value of composerAnalyzerEnabled.
+     *
+     * @return the value of composerAnalyzerEnabled
+     */
+    public Boolean isComposerAnalyzerEnabled() {
+<span class="nc" id="L683">        return composerAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of composerAnalyzerEnabled.
+     *
+     * @param composerAnalyzerEnabled new value of composerAnalyzerEnabled
+     */
+    public void setComposerAnalyzerEnabled(Boolean composerAnalyzerEnabled) {
+<span class="nc" id="L692">        this.composerAnalyzerEnabled = composerAnalyzerEnabled;</span>
+<span class="nc" id="L693">    }</span>
+
+    /**
+     * Get the value of autoconfAnalyzerEnabled.
+     *
+     * @return the value of autoconfAnalyzerEnabled
+     */
+    public Boolean isAutoconfAnalyzerEnabled() {
+<span class="nc" id="L701">        return autoconfAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of autoconfAnalyzerEnabled.
+     *
+     * @param autoconfAnalyzerEnabled new value of autoconfAnalyzerEnabled
+     */
+    public void setAutoconfAnalyzerEnabled(Boolean autoconfAnalyzerEnabled) {
+<span class="nc" id="L710">        this.autoconfAnalyzerEnabled = autoconfAnalyzerEnabled;</span>
+<span class="nc" id="L711">    }</span>
+
+    /**
+     * Get the value of cmakeAnalyzerEnabled.
+     *
+     * @return the value of cmakeAnalyzerEnabled
+     */
+    public Boolean isCMakeAnalyzerEnabled() {
+<span class="nc" id="L719">        return cmakeAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of cmakeAnalyzerEnabled.
+     *
+     * @param cmakeAnalyzerEnabled new value of cmakeAnalyzerEnabled
+     */
+    public void setCMakeAnalyzerEnabled(Boolean cmakeAnalyzerEnabled) {
+<span class="nc" id="L728">        this.cmakeAnalyzerEnabled = cmakeAnalyzerEnabled;</span>
+<span class="nc" id="L729">    }</span>
+
+    /**
+     * Returns if the Bundle Audit Analyzer is enabled.
+     *
+     * @return if the Bundle Audit Analyzer is enabled.
+     */
+    public Boolean isBundleAuditAnalyzerEnabled() {
+<span class="nc" id="L737">        return bundleAuditAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Sets if the Bundle Audit Analyzer is enabled.
+     *
+     * @param bundleAuditAnalyzerEnabled whether or not the analyzer should be
+     *                                   enabled
+     */
+    public void setBundleAuditAnalyzerEnabled(Boolean bundleAuditAnalyzerEnabled) {
+<span class="nc" id="L747">        this.bundleAuditAnalyzerEnabled = bundleAuditAnalyzerEnabled;</span>
+<span class="nc" id="L748">    }</span>
+
+    /**
+     * Returns the path to the bundle audit executable.
+     *
+     * @return the path to the bundle audit executable
+     */
+    public String getBundleAuditPath() {
+<span class="nc" id="L756">        return bundleAuditPath;</span>
+    }
+
+    /**
+     * Sets the path to the bundle audit executable.
+     *
+     * @param bundleAuditPath the path to the bundle audit executable
+     */
+    public void setBundleAuditPath(String bundleAuditPath) {
+<span class="nc" id="L765">        this.bundleAuditPath = bundleAuditPath;</span>
+<span class="nc" id="L766">    }</span>
+
+    /**
+     * Returns if the cocoapods analyzer is enabled.
+     *
+     * @return if the cocoapods analyzer is enabled
+     */
+    public boolean isCocoapodsAnalyzerEnabled() {
+<span class="nc" id="L774">        return cocoapodsAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Sets whether or not the cocoapods analyzer is enabled.
+     *
+     * @param cocoapodsAnalyzerEnabled the state of the cocoapods analyzer
+     */
+    public void setCocoapodsAnalyzerEnabled(Boolean cocoapodsAnalyzerEnabled) {
+<span class="nc" id="L783">        this.cocoapodsAnalyzerEnabled = cocoapodsAnalyzerEnabled;</span>
+<span class="nc" id="L784">    }</span>
+
+    /**
+     * Returns whether or not the Swift package Analyzer is enabled.
+     *
+     * @return whether or not the Swift package Analyzer is enabled
+     */
+    public Boolean isSwiftPackageManagerAnalyzerEnabled() {
+<span class="nc" id="L792">        return swiftPackageManagerAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Sets the enabled state of the swift package manager analyzer.
+     *
+     * @param swiftPackageManagerAnalyzerEnabled the enabled state of the swift
+     *                                           package manager
+     */
+    public void setSwiftPackageManagerAnalyzerEnabled(Boolean swiftPackageManagerAnalyzerEnabled) {
+<span class="nc" id="L802">        this.swiftPackageManagerAnalyzerEnabled = swiftPackageManagerAnalyzerEnabled;</span>
+<span class="nc" id="L803">    }</span>
+
+    /**
+     * Get the value of opensslAnalyzerEnabled.
+     *
+     * @return the value of opensslAnalyzerEnabled
+     */
+    public Boolean isOpensslAnalyzerEnabled() {
+<span class="nc" id="L811">        return opensslAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of opensslAnalyzerEnabled.
+     *
+     * @param opensslAnalyzerEnabled new value of opensslAnalyzerEnabled
+     */
+    public void setOpensslAnalyzerEnabled(Boolean opensslAnalyzerEnabled) {
+<span class="nc" id="L820">        this.opensslAnalyzerEnabled = opensslAnalyzerEnabled;</span>
+<span class="nc" id="L821">    }</span>
+
+    /**
+     * Get the value of nodeAnalyzerEnabled.
+     *
+     * @return the value of nodeAnalyzerEnabled
+     */
+    public Boolean isNodeAnalyzerEnabled() {
+<span class="nc" id="L829">        return nodeAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of nodeAnalyzerEnabled.
+     *
+     * @param nodeAnalyzerEnabled new value of nodeAnalyzerEnabled
+     */
+    public void setNodeAnalyzerEnabled(Boolean nodeAnalyzerEnabled) {
+<span class="nc" id="L838">        this.nodeAnalyzerEnabled = nodeAnalyzerEnabled;</span>
+<span class="nc" id="L839">    }</span>
+
+    /**
+     * Get the value of nodeAnalyzerEnabled.
+     *
+     * @return the value of nodeAnalyzerEnabled
+     * @deprecated As of release 3.3.3, replaced by
+     * {@link #isNodeAuditAnalyzerEnabled()}
+     */
+    @Deprecated
+    public Boolean isNspAnalyzerEnabled() {
+<span class="nc" id="L850">        log(&quot;The NspAnalyzerEnabled configuration has been deprecated and replaced by NodeAuditAnalyzerEnabled&quot;, Project.MSG_ERR);</span>
+<span class="nc" id="L851">        log(&quot;The NspAnalyzerEnabled configuration will be removed in the next major release&quot;);</span>
+<span class="nc" id="L852">        return nodeAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of nodeAnalyzerEnabled.
+     *
+     * @param nodeAnalyzerEnabled new value of nodeAnalyzerEnabled
+     * @deprecated As of release 3.3.3, replaced by
+     * {@link #setNodeAuditAnalyzerEnabled(java.lang.Boolean)}
+     */
+    @Deprecated
+    public void setNspAnalyzerEnabled(Boolean nodeAnalyzerEnabled) {
+<span class="nc" id="L864">        log(&quot;The NspAnalyzerEnabled configuration has been deprecated and replaced by NodeAuditAnalyzerEnabled&quot;, Project.MSG_ERR);</span>
+<span class="nc" id="L865">        log(&quot;The NspAnalyzerEnabled configuration will be removed in the next major release&quot;);</span>
+<span class="nc" id="L866">        this.nodeAnalyzerEnabled = nodeAnalyzerEnabled;</span>
+<span class="nc" id="L867">    }</span>
+
+    /**
+     * Get the value of nodeAuditAnalyzerEnabled.
+     *
+     * @return the value of nodeAuditAnalyzerEnabled
+     */
+    public Boolean isNodeAuditAnalyzerEnabled() {
+<span class="nc" id="L875">        return nodeAuditAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of nodeAuditAnalyzerEnabled.
+     *
+     * @param nodeAuditAnalyzerEnabled new value of nodeAuditAnalyzerEnabled
+     */
+    public void setNodeAuditAnalyzerEnabled(Boolean nodeAuditAnalyzerEnabled) {
+<span class="nc" id="L884">        this.nodeAuditAnalyzerEnabled = nodeAuditAnalyzerEnabled;</span>
+<span class="nc" id="L885">    }</span>
+
+    /**
+     * Get the value of retireJsAnalyzerEnabled.
+     *
+     * @return the value of retireJsAnalyzerEnabled
+     */
+    public Boolean isRetireJsAnalyzerEnabled() {
+<span class="nc" id="L893">        return retireJsAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of retireJsAnalyzerEnabled.
+     *
+     * @param retireJsAnalyzerEnabled new value of retireJsAnalyzerEnabled
+     */
+    public void setRetireJsAnalyzerEnabled(Boolean retireJsAnalyzerEnabled) {
+<span class="nc" id="L902">        this.retireJsAnalyzerEnabled = retireJsAnalyzerEnabled;</span>
+<span class="nc" id="L903">    }</span>
+
+    /**
+     * Get the value of Retire JS repository URL.
+     *
+     * @return the value of retireJsUrl
+     */
+    public String getRetireJsUrl() {
+<span class="nc" id="L911">        return retireJsUrl;</span>
+    }
+
+    /**
+     * Set the value of the Retire JS repository URL.
+     *
+     * @param retireJsUrl new value of retireJsUrl
+     */
+    public void setRetireJsUrl(String retireJsUrl) {
+<span class="nc" id="L920">        this.retireJsUrl = retireJsUrl;</span>
+<span class="nc" id="L921">    }</span>
+
+    /**
+     * Get the value of retirejsFilterNonVulnerable.
+     *
+     * @return the value of retirejsFilterNonVulnerable
+     */
+    public Boolean isRetirejsFilterNonVulnerable() {
+<span class="nc" id="L929">        return retirejsFilterNonVulnerable;</span>
+    }
+
+    /**
+     * Set the value of retirejsFilterNonVulnerable.
+     *
+     * @param retirejsFilterNonVulnerable new value of
+     *                                    retirejsFilterNonVulnerable
+     */
+    public void setRetirejsFilterNonVulnerable(Boolean retirejsFilterNonVulnerable) {
+<span class="fc" id="L939">        this.retirejsFilterNonVulnerable = retirejsFilterNonVulnerable;</span>
+<span class="fc" id="L940">    }</span>
+
+    /**
+     * Gets retire JS Analyzers file content filters.
+     *
+     * @return retire JS Analyzers file content filters
+     */
+    public List&lt;String&gt; getRetirejsFilters() {
+<span class="nc" id="L948">        return retirejsFilters;</span>
+    }
+
+    /**
+     * Add a regular expression to the set of retire JS content filters.
+     * &lt;p&gt;
+     * This is called by Ant.
+     *
+     * @param retirejsFilter the regular expression used to filter based on file
+     *                       content
+     */
+    public void addConfiguredRetirejsFilter(final RetirejsFilter retirejsFilter) {
+<span class="fc" id="L960">        retirejsFilters.add(retirejsFilter.getRegex());</span>
+<span class="fc" id="L961">    }</span>
+
+    /**
+     * Get the value of rubygemsAnalyzerEnabled.
+     *
+     * @return the value of rubygemsAnalyzerEnabled
+     */
+    public Boolean isRubygemsAnalyzerEnabled() {
+<span class="nc" id="L969">        return rubygemsAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of rubygemsAnalyzerEnabled.
+     *
+     * @param rubygemsAnalyzerEnabled new value of rubygemsAnalyzerEnabled
+     */
+    public void setRubygemsAnalyzerEnabled(Boolean rubygemsAnalyzerEnabled) {
+<span class="nc" id="L978">        this.rubygemsAnalyzerEnabled = rubygemsAnalyzerEnabled;</span>
+<span class="nc" id="L979">    }</span>
+
+    /**
+     * Get the value of pyPackageAnalyzerEnabled.
+     *
+     * @return the value of pyPackageAnalyzerEnabled
+     */
+    public Boolean isPyPackageAnalyzerEnabled() {
+<span class="nc" id="L987">        return pyPackageAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of pyPackageAnalyzerEnabled.
+     *
+     * @param pyPackageAnalyzerEnabled new value of pyPackageAnalyzerEnabled
+     */
+    public void setPyPackageAnalyzerEnabled(Boolean pyPackageAnalyzerEnabled) {
+<span class="nc" id="L996">        this.pyPackageAnalyzerEnabled = pyPackageAnalyzerEnabled;</span>
+<span class="nc" id="L997">    }</span>
+
+    /**
+     * Get the value of pyDistributionAnalyzerEnabled.
+     *
+     * @return the value of pyDistributionAnalyzerEnabled
+     */
+    public Boolean isPyDistributionAnalyzerEnabled() {
+<span class="nc" id="L1005">        return pyDistributionAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of pyDistributionAnalyzerEnabled.
+     *
+     * @param pyDistributionAnalyzerEnabled new value of
+     *                                      pyDistributionAnalyzerEnabled
+     */
+    public void setPyDistributionAnalyzerEnabled(Boolean pyDistributionAnalyzerEnabled) {
+<span class="nc" id="L1015">        this.pyDistributionAnalyzerEnabled = pyDistributionAnalyzerEnabled;</span>
+<span class="nc" id="L1016">    }</span>
+
+    /**
+     * Get the value of centralAnalyzerEnabled.
+     *
+     * @return the value of centralAnalyzerEnabled
+     */
+    public Boolean isCentralAnalyzerEnabled() {
+<span class="nc" id="L1024">        return centralAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of centralAnalyzerEnabled.
+     *
+     * @param centralAnalyzerEnabled new value of centralAnalyzerEnabled
+     */
+    public void setCentralAnalyzerEnabled(Boolean centralAnalyzerEnabled) {
+<span class="nc" id="L1033">        this.centralAnalyzerEnabled = centralAnalyzerEnabled;</span>
+<span class="nc" id="L1034">    }</span>
+
+    /**
+     * Get the value of nexusAnalyzerEnabled.
+     *
+     * @return the value of nexusAnalyzerEnabled
+     */
+    public Boolean isNexusAnalyzerEnabled() {
+<span class="nc" id="L1042">        return nexusAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of nexusAnalyzerEnabled.
+     *
+     * @param nexusAnalyzerEnabled new value of nexusAnalyzerEnabled
+     */
+    public void setNexusAnalyzerEnabled(Boolean nexusAnalyzerEnabled) {
+<span class="nc" id="L1051">        this.nexusAnalyzerEnabled = nexusAnalyzerEnabled;</span>
+<span class="nc" id="L1052">    }</span>
+
+    /**
+     * Get the value of nexusUrl.
+     *
+     * @return the value of nexusUrl
+     */
+    public String getNexusUrl() {
+<span class="nc" id="L1060">        return nexusUrl;</span>
+    }
+
+    /**
+     * Set the value of nexusUrl.
+     *
+     * @param nexusUrl new value of nexusUrl
+     */
+    public void setNexusUrl(String nexusUrl) {
+<span class="nc" id="L1069">        this.nexusUrl = nexusUrl;</span>
+<span class="nc" id="L1070">    }</span>
+
+    /**
+     * Get the value of nexusUser.
+     *
+     * @return the value of nexusUser
+     */
+    public String getNexusUser() {
+<span class="nc" id="L1078">        return nexusUser;</span>
+    }
+
+    /**
+     * Set the value of nexusUser.
+     *
+     * @param nexusUser new value of nexusUser
+     */
+    public void setNexusUser(String nexusUser) {
+<span class="nc" id="L1087">        this.nexusUser = nexusUser;</span>
+<span class="nc" id="L1088">    }</span>
+
+    /**
+     * Get the value of nexusPassword.
+     *
+     * @return the value of nexusPassword
+     */
+    public String getNexusPassword() {
+<span class="nc" id="L1096">        return nexusPassword;</span>
+    }
+
+    /**
+     * Set the value of nexusPassword.
+     *
+     * @param nexusPassword new value of nexusPassword
+     */
+    public void setNexusPassword(String nexusPassword) {
+<span class="nc" id="L1105">        this.nexusPassword = nexusPassword;</span>
+<span class="nc" id="L1106">    }</span>
+
+    /**
+     * Get the value of nexusUsesProxy.
+     *
+     * @return the value of nexusUsesProxy
+     */
+    public Boolean isNexusUsesProxy() {
+<span class="nc" id="L1114">        return nexusUsesProxy;</span>
+    }
+
+    /**
+     * Set the value of nexusUsesProxy.
+     *
+     * @param nexusUsesProxy new value of nexusUsesProxy
+     */
+    public void setNexusUsesProxy(Boolean nexusUsesProxy) {
+<span class="nc" id="L1123">        this.nexusUsesProxy = nexusUsesProxy;</span>
+<span class="nc" id="L1124">    }</span>
+
+    /**
+     * Get the value of zipExtensions.
+     *
+     * @return the value of zipExtensions
+     */
+    public String getZipExtensions() {
+<span class="nc" id="L1132">        return zipExtensions;</span>
+    }
+
+    /**
+     * Set the value of zipExtensions.
+     *
+     * @param zipExtensions new value of zipExtensions
+     */
+    public void setZipExtensions(String zipExtensions) {
+<span class="nc" id="L1141">        this.zipExtensions = zipExtensions;</span>
+<span class="nc" id="L1142">    }</span>
+
+    /**
+     * Get the value of pathToCore.
+     *
+     * @return the value of pathToCore
+     */
+    public String getPathToDotnetCore() {
+<span class="nc" id="L1150">        return pathToCore;</span>
+    }
+
+    /**
+     * Set the value of pathToCore.
+     *
+     * @param pathToCore new value of pathToCore
+     */
+    public void setPathToDotnetCore(String pathToCore) {
+<span class="nc" id="L1159">        this.pathToCore = pathToCore;</span>
+<span class="nc" id="L1160">    }</span>
+
+    /**
+     * Get value of {@link #ossindexAnalyzerEnabled}.
+     *
+     * @return the value of ossindexAnalyzerEnabled
+     */
+    public Boolean isOssindexAnalyzerEnabled() {
+<span class="nc" id="L1168">        return ossindexAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set value of {@link #ossindexAnalyzerEnabled}.
+     *
+     * @param ossindexAnalyzerEnabled new value of ossindexAnalyzerEnabled
+     */
+    public void setOssindexAnalyzerEnabled(Boolean ossindexAnalyzerEnabled) {
+<span class="fc" id="L1177">        this.ossindexAnalyzerEnabled = ossindexAnalyzerEnabled;</span>
+<span class="fc" id="L1178">    }</span>
+
+    /**
+     * Get value of {@link #ossindexAnalyzerUrl}.
+     *
+     * @return the value of ossindexAnalyzerUrl
+     */
+    public String getOssindexAnalyzerUrl() {
+<span class="nc" id="L1186">        return ossindexAnalyzerUrl;</span>
+    }
+
+    /**
+     * Set value of {@link #ossindexAnalyzerUrl}.
+     *
+     * @param ossindexAnalyzerUrl new value of ossindexAnalyzerUrl
+     */
+    public void setOssindexAnalyzerUrl(String ossindexAnalyzerUrl) {
+<span class="nc" id="L1195">        this.ossindexAnalyzerUrl = ossindexAnalyzerUrl;</span>
+<span class="nc" id="L1196">    }</span>
+
+    /**
+     * Returns the value of cmakeAnalyzerEnabled.
+     *
+     * @return the value of cmakeAnalyzerEnabled
+     */
+    public Boolean getCmakeAnalyzerEnabled() {
+<span class="nc" id="L1204">        return cmakeAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of cmakeAnalyzerEnabled.
+     *
+     * @param cmakeAnalyzerEnabled new value of cmakeAnalyzerEnabled
+     */
+    public void setCmakeAnalyzerEnabled(Boolean cmakeAnalyzerEnabled) {
+<span class="nc" id="L1213">        this.cmakeAnalyzerEnabled = cmakeAnalyzerEnabled;</span>
+<span class="nc" id="L1214">    }</span>
+
+    /**
+     * Returns the value of artifactoryAnalyzerEnabled.
+     *
+     * @return the value of artifactoryAnalyzerEnabled
+     */
+    public Boolean getArtifactoryAnalyzerEnabled() {
+<span class="nc" id="L1222">        return artifactoryAnalyzerEnabled;</span>
+    }
+
+    /**
+     * Set the value of artifactoryAnalyzerEnabled.
+     *
+     * @param artifactoryAnalyzerEnabled new value of artifactoryAnalyzerEnabled
+     */
+    public void setArtifactoryAnalyzerEnabled(Boolean artifactoryAnalyzerEnabled) {
+<span class="nc" id="L1231">        this.artifactoryAnalyzerEnabled = artifactoryAnalyzerEnabled;</span>
+<span class="nc" id="L1232">    }</span>
+
+    /**
+     * Returns the value of artifactoryAnalyzerUrl.
+     *
+     * @return the value of artifactoryAnalyzerUrl
+     */
+    public String getArtifactoryAnalyzerUrl() {
+<span class="nc" id="L1240">        return artifactoryAnalyzerUrl;</span>
+    }
+
+    /**
+     * Set the value of artifactoryAnalyzerUrl.
+     *
+     * @param artifactoryAnalyzerUrl new value of artifactoryAnalyzerUrl
+     */
+    public void setArtifactoryAnalyzerUrl(String artifactoryAnalyzerUrl) {
+<span class="nc" id="L1249">        this.artifactoryAnalyzerUrl = artifactoryAnalyzerUrl;</span>
+<span class="nc" id="L1250">    }</span>
+
+    /**
+     * Returns the value of artifactoryAnalyzerUseProxy.
+     *
+     * @return the value of artifactoryAnalyzerUseProxy
+     */
+    public Boolean getArtifactoryAnalyzerUseProxy() {
+<span class="nc" id="L1258">        return artifactoryAnalyzerUseProxy;</span>
+    }
+
+    /**
+     * Set the value of artifactoryAnalyzerUseProxy.
+     *
+     * @param artifactoryAnalyzerUseProxy new value of
+     *                                    artifactoryAnalyzerUseProxy
+     */
+    public void setArtifactoryAnalyzerUseProxy(Boolean artifactoryAnalyzerUseProxy) {
+<span class="nc" id="L1268">        this.artifactoryAnalyzerUseProxy = artifactoryAnalyzerUseProxy;</span>
+<span class="nc" id="L1269">    }</span>
+
+    /**
+     * Returns the value of artifactoryAnalyzerParallelAnalysis.
+     *
+     * @return the value of artifactoryAnalyzerParallelAnalysis
+     */
+    public Boolean getArtifactoryAnalyzerParallelAnalysis() {
+<span class="nc" id="L1277">        return artifactoryAnalyzerParallelAnalysis;</span>
+    }
+
+    /**
+     * Set the value of artifactoryAnalyzerParallelAnalysis.
+     *
+     * @param artifactoryAnalyzerParallelAnalysis new value of
+     *                                            artifactoryAnalyzerParallelAnalysis
+     */
+    public void setArtifactoryAnalyzerParallelAnalysis(Boolean artifactoryAnalyzerParallelAnalysis) {
+<span class="nc" id="L1287">        this.artifactoryAnalyzerParallelAnalysis = artifactoryAnalyzerParallelAnalysis;</span>
+<span class="nc" id="L1288">    }</span>
+
+    /**
+     * Returns the value of artifactoryAnalyzerUsername.
+     *
+     * @return the value of artifactoryAnalyzerUsername
+     */
+    public String getArtifactoryAnalyzerUsername() {
+<span class="nc" id="L1296">        return artifactoryAnalyzerUsername;</span>
+    }
+
+    /**
+     * Set the value of artifactoryAnalyzerUsername.
+     *
+     * @param artifactoryAnalyzerUsername new value of
+     *                                    artifactoryAnalyzerUsername
+     */
+    public void setArtifactoryAnalyzerUsername(String artifactoryAnalyzerUsername) {
+<span class="nc" id="L1306">        this.artifactoryAnalyzerUsername = artifactoryAnalyzerUsername;</span>
+<span class="nc" id="L1307">    }</span>
+
+    /**
+     * Returns the value of artifactoryAnalyzerApiToken.
+     *
+     * @return the value of artifactoryAnalyzerApiToken
+     */
+    public String getArtifactoryAnalyzerApiToken() {
+<span class="nc" id="L1315">        return artifactoryAnalyzerApiToken;</span>
+    }
+
+    /**
+     * Set the value of artifactoryAnalyzerApiToken.
+     *
+     * @param artifactoryAnalyzerApiToken new value of
+     *                                    artifactoryAnalyzerApiToken
+     */
+    public void setArtifactoryAnalyzerApiToken(String artifactoryAnalyzerApiToken) {
+<span class="nc" id="L1325">        this.artifactoryAnalyzerApiToken = artifactoryAnalyzerApiToken;</span>
+<span class="nc" id="L1326">    }</span>
+
+    /**
+     * Returns the value of artifactoryAnalyzerBearerToken.
+     *
+     * @return the value of artifactoryAnalyzerBearerToken
+     */
+    public String getArtifactoryAnalyzerBearerToken() {
+<span class="nc" id="L1334">        return artifactoryAnalyzerBearerToken;</span>
+    }
+
+    /**
+     * Set the value of artifactoryAnalyzerBearerToken.
+     *
+     * @param artifactoryAnalyzerBearerToken new value of
+     *                                       artifactoryAnalyzerBearerToken
+     */
+    public void setArtifactoryAnalyzerBearerToken(String artifactoryAnalyzerBearerToken) {
+<span class="nc" id="L1344">        this.artifactoryAnalyzerBearerToken = artifactoryAnalyzerBearerToken;</span>
+<span class="nc" id="L1345">    }</span>
+
+    @Override
+    public void execute() throws BuildException {
+<span class="fc" id="L1349">        dealWithReferences();</span>
+<span class="fc" id="L1350">        validateConfiguration();</span>
+<span class="fc" id="L1351">        populateSettings();</span>
+<span class="fc" id="L1352">        try (Engine engine = new Engine(Check.class.getClassLoader(), getSettings())) {</span>
+<span class="fc bfc" id="L1353" title="All 2 branches covered.">            for (Resource resource : getPath()) {</span>
+<span class="fc" id="L1354">                final FileProvider provider = resource.as(FileProvider.class);</span>
+<span class="pc bpc" id="L1355" title="1 of 2 branches missed.">                if (provider != null) {</span>
+<span class="fc" id="L1356">                    final File file = provider.getFile();</span>
+<span class="pc bpc" id="L1357" title="1 of 4 branches missed.">                    if (file != null &amp;&amp; file.exists()) {</span>
+<span class="fc" id="L1358">                        engine.scan(file);</span>
+                    }
+                }
+<span class="fc" id="L1361">            }</span>
+
+            try {
+<span class="fc" id="L1364">                engine.analyzeDependencies();</span>
+<span class="nc" id="L1365">            } catch (ExceptionCollection ex) {</span>
+<span class="nc bnc" id="L1366" title="All 2 branches missed.">                if (this.isFailOnError()) {</span>
+<span class="nc" id="L1367">                    throw new BuildException(ex);</span>
+                }
+<span class="fc" id="L1369">            }</span>
+<span class="fc bfc" id="L1370" title="All 2 branches covered.">            for (String format : getReportFormats()) {</span>
+<span class="fc" id="L1371">                engine.writeReports(getProjectName(), new File(reportOutputDirectory), format);</span>
+<span class="fc" id="L1372">            }</span>
+
+<span class="fc bfc" id="L1374" title="All 2 branches covered.">            if (this.failBuildOnCVSS &lt;= 10) {</span>
+<span class="fc" id="L1375">                checkForFailure(engine.getDependencies());</span>
+            }
+<span class="pc bpc" id="L1377" title="1 of 2 branches missed.">            if (this.showSummary) {</span>
+<span class="fc" id="L1378">                DependencyCheckScanAgent.showSummary(engine.getDependencies());</span>
+            }
+<span class="nc" id="L1380">        } catch (DatabaseException ex) {</span>
+<span class="nc" id="L1381">            final String msg = &quot;Unable to connect to the dependency-check database; analysis has stopped&quot;;</span>
+<span class="nc bnc" id="L1382" title="All 2 branches missed.">            if (this.isFailOnError()) {</span>
+<span class="nc" id="L1383">                throw new BuildException(msg, ex);</span>
+            }
+<span class="nc" id="L1385">            log(msg, ex, Project.MSG_ERR);</span>
+<span class="nc" id="L1386">        } catch (ReportException ex) {</span>
+<span class="nc" id="L1387">            final String msg = &quot;Unable to generate the dependency-check report&quot;;</span>
+<span class="nc bnc" id="L1388" title="All 2 branches missed.">            if (this.isFailOnError()) {</span>
+<span class="nc" id="L1389">                throw new BuildException(msg, ex);</span>
+            }
+<span class="nc" id="L1391">            log(msg, ex, Project.MSG_ERR);</span>
+        } finally {
+<span class="fc" id="L1393">            getSettings().cleanup();</span>
+        }
+<span class="fc" id="L1395">    }</span>
+
+    /**
+     * Validate the configuration to ensure the parameters have been properly
+     * configured/initialized.
+     *
+     * @throws BuildException if the task was not configured correctly.
+     */
+    private synchronized void validateConfiguration() throws BuildException {
+<span class="pc bpc" id="L1404" title="1 of 2 branches missed.">        if (path == null) {</span>
+<span class="nc" id="L1405">            throw new BuildException(&quot;No project dependencies have been defined to analyze.&quot;);</span>
+        }
+<span class="pc bpc" id="L1407" title="2 of 4 branches missed.">        if (failBuildOnCVSS &lt; 0 || failBuildOnCVSS &gt; 11) {</span>
+<span class="nc" id="L1408">            throw new BuildException(&quot;Invalid configuration, failBuildOnCVSS must be between 0 and 11.&quot;);</span>
+        }
+<span class="fc" id="L1410">    }</span>
+
+    /**
+     * Takes the properties supplied and updates the dependency-check settings.
+     * Additionally, this sets the system properties required to change the
+     * proxy server, port, and connection timeout.
+     *
+     * @throws BuildException thrown when an invalid setting is configured.
+     */
+    @Override
+    protected void populateSettings() throws BuildException {
+<span class="fc" id="L1421">        super.populateSettings();</span>
+<span class="fc" id="L1422">        getSettings().setBooleanIfNotNull(Settings.KEYS.AUTO_UPDATE, autoUpdate);</span>
+<span class="fc" id="L1423">        getSettings().setArrayIfNotEmpty(Settings.KEYS.SUPPRESSION_FILE, suppressionFiles);</span>
+<span class="fc" id="L1424">        getSettings().setStringIfNotEmpty(Settings.KEYS.HINTS_FILE, hintsFile);</span>
+<span class="fc" id="L1425">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_EXPERIMENTAL_ENABLED, enableExperimental);</span>
+<span class="fc" id="L1426">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_RETIRED_ENABLED, enableRetired);</span>
+<span class="fc" id="L1427">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_JAR_ENABLED, jarAnalyzerEnabled);</span>
+<span class="fc" id="L1428">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_PYTHON_DISTRIBUTION_ENABLED, pyDistributionAnalyzerEnabled);</span>
+<span class="fc" id="L1429">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_PYTHON_PACKAGE_ENABLED, pyPackageAnalyzerEnabled);</span>
+<span class="fc" id="L1430">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_RUBY_GEMSPEC_ENABLED, rubygemsAnalyzerEnabled);</span>
+<span class="fc" id="L1431">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_OPENSSL_ENABLED, opensslAnalyzerEnabled);</span>
+<span class="fc" id="L1432">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_CMAKE_ENABLED, cmakeAnalyzerEnabled);</span>
+
+<span class="fc" id="L1434">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_ARTIFACTORY_ENABLED, artifactoryAnalyzerEnabled);</span>
+<span class="fc" id="L1435">        getSettings().setStringIfNotEmpty(Settings.KEYS.ANALYZER_ARTIFACTORY_URL, artifactoryAnalyzerUrl);</span>
+<span class="fc" id="L1436">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_ARTIFACTORY_USES_PROXY, artifactoryAnalyzerUseProxy);</span>
+<span class="fc" id="L1437">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_ARTIFACTORY_PARALLEL_ANALYSIS, artifactoryAnalyzerParallelAnalysis);</span>
+<span class="fc" id="L1438">        getSettings().setStringIfNotEmpty(Settings.KEYS.ANALYZER_ARTIFACTORY_API_USERNAME, artifactoryAnalyzerUsername);</span>
+<span class="fc" id="L1439">        getSettings().setStringIfNotEmpty(Settings.KEYS.ANALYZER_ARTIFACTORY_API_TOKEN, artifactoryAnalyzerApiToken);</span>
+<span class="fc" id="L1440">        getSettings().setStringIfNotEmpty(Settings.KEYS.ANALYZER_ARTIFACTORY_BEARER_TOKEN, artifactoryAnalyzerBearerToken);</span>
+
+<span class="fc" id="L1442">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_SWIFT_PACKAGE_MANAGER_ENABLED, swiftPackageManagerAnalyzerEnabled);</span>
+<span class="fc" id="L1443">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_COCOAPODS_ENABLED, cocoapodsAnalyzerEnabled);</span>
+<span class="fc" id="L1444">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_BUNDLE_AUDIT_ENABLED, bundleAuditAnalyzerEnabled);</span>
+<span class="fc" id="L1445">        getSettings().setStringIfNotNull(Settings.KEYS.ANALYZER_BUNDLE_AUDIT_PATH, bundleAuditPath);</span>
+<span class="fc" id="L1446">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_AUTOCONF_ENABLED, autoconfAnalyzerEnabled);</span>
+<span class="fc" id="L1447">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_COMPOSER_LOCK_ENABLED, composerAnalyzerEnabled);</span>
+<span class="fc" id="L1448">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_NODE_PACKAGE_ENABLED, nodeAnalyzerEnabled);</span>
+<span class="fc" id="L1449">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_NODE_AUDIT_ENABLED, nodeAuditAnalyzerEnabled);</span>
+<span class="fc" id="L1450">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_RETIREJS_ENABLED, retireJsAnalyzerEnabled);</span>
+<span class="fc" id="L1451">        getSettings().setStringIfNotNull(Settings.KEYS.ANALYZER_RETIREJS_REPO_JS_URL, retireJsUrl);</span>
+<span class="fc" id="L1452">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_RETIREJS_FILTER_NON_VULNERABLE, retirejsFilterNonVulnerable);</span>
+<span class="fc" id="L1453">        getSettings().setArrayIfNotEmpty(Settings.KEYS.ANALYZER_RETIREJS_FILTERS, retirejsFilters);</span>
+
+<span class="fc" id="L1455">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_NUSPEC_ENABLED, nuspecAnalyzerEnabled);</span>
+<span class="fc" id="L1456">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_NUGETCONF_ENABLED, nugetconfAnalyzerEnabled);</span>
+<span class="fc" id="L1457">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_CENTRAL_ENABLED, centralAnalyzerEnabled);</span>
+<span class="fc" id="L1458">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_NEXUS_ENABLED, nexusAnalyzerEnabled);</span>
+<span class="fc" id="L1459">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_ARCHIVE_ENABLED, archiveAnalyzerEnabled);</span>
+<span class="fc" id="L1460">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_ASSEMBLY_ENABLED, assemblyAnalyzerEnabled);</span>
+<span class="fc" id="L1461">        getSettings().setStringIfNotEmpty(Settings.KEYS.ANALYZER_NEXUS_URL, nexusUrl);</span>
+<span class="fc" id="L1462">        getSettings().setStringIfNotEmpty(Settings.KEYS.ANALYZER_NEXUS_USER, nexusUser);</span>
+<span class="fc" id="L1463">        getSettings().setStringIfNotEmpty(Settings.KEYS.ANALYZER_NEXUS_PASSWORD, nexusPassword);</span>
+<span class="fc" id="L1464">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_NEXUS_USES_PROXY, nexusUsesProxy);</span>
+<span class="fc" id="L1465">        getSettings().setStringIfNotEmpty(Settings.KEYS.ADDITIONAL_ZIP_EXTENSIONS, zipExtensions);</span>
+<span class="fc" id="L1466">        getSettings().setStringIfNotEmpty(Settings.KEYS.ANALYZER_ASSEMBLY_DOTNET_PATH, pathToCore);</span>
+<span class="fc" id="L1467">        getSettings().setBooleanIfNotNull(Settings.KEYS.ANALYZER_OSSINDEX_ENABLED, ossindexAnalyzerEnabled);</span>
+<span class="fc" id="L1468">        getSettings().setStringIfNotEmpty(Settings.KEYS.ANALYZER_OSSINDEX_URL, ossindexAnalyzerUrl);</span>
+<span class="fc" id="L1469">        getSettings().setFloat(Settings.KEYS.JUNIT_FAIL_ON_CVSS, junitFailOnCVSS);</span>
+<span class="fc" id="L1470">    }</span>
+
+    /**
+     * Checks to see if a vulnerability has been identified with a CVSS score
+     * that is above the threshold set in the configuration.
+     *
+     * @param dependencies the list of dependency objects
+     * @throws BuildException thrown if a CVSS score is found that is higher
+     *                        than the threshold set
+     */
+    private void checkForFailure(Dependency[] dependencies) throws BuildException {
+<span class="fc" id="L1481">        final StringBuilder ids = new StringBuilder();</span>
+<span class="fc bfc" id="L1482" title="All 2 branches covered.">        for (Dependency d : dependencies) {</span>
+<span class="fc bfc" id="L1483" title="All 2 branches covered.">            for (Vulnerability v : d.getVulnerabilities()) {</span>
+<span class="pc bpc" id="L1484" title="2 of 4 branches missed.">                if ((v.getCvssV2() != null &amp;&amp; v.getCvssV2().getScore() &gt;= failBuildOnCVSS)</span>
+<span class="nc bnc" id="L1485" title="All 4 branches missed.">                        || (v.getCvssV3() != null &amp;&amp; v.getCvssV3().getBaseScore() &gt;= failBuildOnCVSS)) {</span>
+<span class="fc bfc" id="L1486" title="All 2 branches covered.">                    if (ids.length() == 0) {</span>
+<span class="fc" id="L1487">                        ids.append(v.getName());</span>
+                    } else {
+<span class="fc" id="L1489">                        ids.append(&quot;, &quot;).append(v.getName());</span>
+                    }
+                }
+<span class="fc" id="L1492">            }</span>
+        }
+<span class="fc bfc" id="L1494" title="All 2 branches covered.">        if (ids.length() &gt; 0) {</span>
+            final String msg;
+<span class="pc bpc" id="L1496" title="1 of 2 branches missed.">            if (showSummary) {</span>
+<span class="fc" id="L1497">                msg = String.format(&quot;%n%nDependency-Check Failure:%n&quot;</span>
+                        + &quot;One or more dependencies were identified with vulnerabilities that have a CVSS score greater than or equal to '%.1f': %s%n&quot;
+<span class="fc" id="L1499">                        + &quot;See the dependency-check report for more details.%n%n&quot;, failBuildOnCVSS, ids.toString());</span>
+            } else {
+<span class="nc" id="L1501">                msg = String.format(&quot;%n%nDependency-Check Failure:%n&quot;</span>
+                        + &quot;One or more dependencies were identified with vulnerabilities.%n%n&quot;
+                        + &quot;See the dependency-check report for more details.%n%n&quot;);
+            }
+<span class="fc" id="L1505">            throw new BuildException(msg);</span>
+        }
+<span class="fc" id="L1507">    }</span>
+
+    /**
+     * An enumeration of supported report formats: &quot;ALL&quot;, &quot;HTML&quot;, &quot;XML&quot;, &quot;CSV&quot;,
+     * &quot;JSON&quot;, &quot;JUNIT&quot;, etc..
+     */
+<span class="fc" id="L1513">    public static class ReportFormats extends EnumeratedAttribute {</span>
+
+        /**
+         * Returns the list of values for the report format.
+         *
+         * @return the list of values for the report format
+         */
+        @Override
+        public String[] getValues() {
+<span class="fc" id="L1522">            int i = 0;</span>
+<span class="fc" id="L1523">            final Format[] formats = Format.values();</span>
+<span class="fc" id="L1524">            final String[] values = new String[formats.length];</span>
+<span class="fc bfc" id="L1525" title="All 2 branches covered.">            for (Format format : formats) {</span>
+<span class="fc" id="L1526">                values[i++] = format.name();</span>
+            }
+<span class="fc" id="L1528">            return values;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.3.201901230119</span></div></body></html>
