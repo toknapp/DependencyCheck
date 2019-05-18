@@ -45,6 +45,9 @@ import javax.json.JsonReader;
 import static org.owasp.dependencycheck.analyzer.NodeAuditAnalyzer.DEFAULT_URL;
 
 import org.owasp.dependencycheck.analyzer.exception.SearchException;
+import org.owasp.dependencycheck.data.cache.DataCache;
+import org.owasp.dependencycheck.data.cache.DataCacheFactory;
+import org.owasp.dependencycheck.utils.Checksum;
 import org.owasp.dependencycheck.utils.URLConnectionFailureException;
 
 /**
@@ -72,6 +75,8 @@ public class NodeAuditSearch {
      * Used for logging.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(NodeAuditSearch.class);
+    
+    private DataCache<List<Advisory>> cache;
 
     /**
      * Creates a NodeAuditSearch for the given repository URL.
@@ -92,6 +97,8 @@ public class NodeAuditSearch {
             useProxy = false;
             LOGGER.debug("Not using proxy");
         }
+        DataCacheFactory factory = new DataCacheFactory(settings);
+        cache = factory.getCache(DataCacheFactory.CacheType.NPM);
     }
 
     /**
@@ -121,6 +128,13 @@ public class NodeAuditSearch {
      */
     private List<Advisory> submitPackage(JsonObject packageJson, int count) throws SearchException, IOException {
         try {
+            String key = Checksum.getSHA256Checksum(packageJson.toString());
+            List<Advisory> cached = cache.get(key);
+            if (cached!=null) {
+                LOGGER.error("cache hit woot-----------------------------------------");
+                return cached;
+            }
+            
             final byte[] packageDatabytes = packageJson.toString().getBytes(StandardCharsets.UTF_8);
             final URLConnectionFactory factory = new URLConnectionFactory(settings);
             final HttpURLConnection conn = factory.createHttpURLConnection(nodeAuditUrl, useProxy);
@@ -146,7 +160,8 @@ public class NodeAuditSearch {
                          JsonReader jsonReader = Json.createReader(in)) {
                         final JSONObject jsonResponse = new JSONObject(jsonReader.readObject().toString());
                         final NpmAuditParser parser = new NpmAuditParser();
-                        return parser.parse(jsonResponse);
+                        List<Advisory> advisories = parser.parse(jsonResponse);
+                        cache.put(key, advisories);
                     }
                 case 503:
                     LOGGER.debug("Node Audit API returned `{} {}` - retrying request.",

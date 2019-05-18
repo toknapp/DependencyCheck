@@ -35,7 +35,7 @@ import org.owasp.dependencycheck.utils.URLConnectionFailureException;
 
 public class NodeAuditSearchTest extends BaseTest {
 
-/*
+
     private static final Logger LOGGER = LoggerFactory.getLogger(NodeAuditSearchTest.class);
     private NodeAuditSearch searcher;
 
@@ -48,7 +48,24 @@ public class NodeAuditSearchTest extends BaseTest {
 
     @Test
     public void testNodeAuditSearchPositive() throws Exception {
-        InputStream in = BaseTest.getResourceAsStream(this, "nodeaudit/package.json");
+        InputStream in = BaseTest.getResourceAsStream(this, "nodeaudit/package-lock.json");
+        try (JsonReader jsonReader = Json.createReader(in)) {
+            final JsonObject packageJson = jsonReader.readObject();
+            final JsonObject sanitizedJson = SanitizePackage.sanitize(packageJson);
+            final JsonObjectBuilder builder = Json.createObjectBuilder();
+            final JsonObject payload = builder.add("package", sanitizedJson).build();
+            final List<Advisory> advisories = searcher.submitPackage(payload);
+            Assert.assertTrue(advisories.size() > 0);
+        } catch (Exception ex) {
+            assumeFalse(ex instanceof URLConnectionFailureException
+                    && ex.getMessage().contains("Unable to connect to "));
+            throw ex;
+        }
+    }
+    
+        @Test
+    public void testNodeAuditSearchCached() throws Exception {
+        InputStream in = BaseTest.getResourceAsStream(this, "nodeaudit/package-lock.json");
         try (JsonReader jsonReader = Json.createReader(in)) {
             final JsonObject packageJson = jsonReader.readObject();
             final JsonObject sanitizedJson = SanitizePackage.sanitize(packageJson);
@@ -63,19 +80,18 @@ public class NodeAuditSearchTest extends BaseTest {
         }
     }
 
-    @Test(expected = AnalysisException.class)
-    public void testNodeAuditSearchNegative() throws Exception {
-        InputStream in = BaseTest.getResourceAsStream(this, "nodeaudit/package.json");
-        try (JsonReader jsonReader = Json.createReader(in)) {
-            final JsonObject packageJson = jsonReader.readObject();
-            final JsonObject sanitizedJson = SanitizePackage.sanitize(packageJson);
-            searcher.submitPackage(sanitizedJson);
-        } catch (Exception ex) {
-            assumeFalse(ex instanceof URLConnectionFailureException
-                    && ex.getMessage().contains("Unable to connect to "));
-            throw ex;
-        }
-    }
-    */
+//    @Test(expected = AnalysisException.class)
+//    public void testNodeAuditSearchNegative() throws Exception {
+//        InputStream in = BaseTest.getResourceAsStream(this, "nodeaudit/package.json");
+//        try (JsonReader jsonReader = Json.createReader(in)) {
+//            final JsonObject packageJson = jsonReader.readObject();
+//            final JsonObject sanitizedJson = SanitizePackage.sanitize(packageJson);
+//            searcher.submitPackage(sanitizedJson);
+//        } catch (Exception ex) {
+//            assumeFalse(ex instanceof URLConnectionFailureException
+//                    && ex.getMessage().contains("Unable to connect to "));
+//            throw ex;
+//        }
+//    }
 
 }
