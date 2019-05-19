@@ -69,7 +69,17 @@ public final class SanitizePackage {
             final JsonObject dependencies = packageJson.getJsonObject("dependencies");
             for (Entry<String,JsonValue> entry: dependencies.entrySet()) {
                 //final JsonObject module = dependencies.getJsonObject(moduleName);
-                final String version = entry.getValue().toString();
+                final String version;
+                if (entry.getValue().getValueType() == JsonValue.ValueType.OBJECT) {
+                    version = ((JsonObject) entry.getValue()).getString("version");
+                } else  {
+                    final String tmp = entry.getValue().toString();
+                    if (tmp.startsWith("\"")) {
+                        version = tmp.substring(1, tmp.length()-1);
+                    } else {
+                        version = tmp;
+                    }
+                }
                 requiresBuilder.add(entry.getKey(), version);
             }
             payloadBuilder.add("requires", requiresBuilder.build());

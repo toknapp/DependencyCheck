@@ -35,7 +35,6 @@ import org.owasp.dependencycheck.utils.URLConnectionFailureException;
 
 public class NodeAuditSearchTest extends BaseTest {
 
-
     private static final Logger LOGGER = LoggerFactory.getLogger(NodeAuditSearchTest.class);
     private NodeAuditSearch searcher;
 
@@ -61,11 +60,9 @@ public class NodeAuditSearchTest extends BaseTest {
                     && ex.getMessage().contains("Unable to connect to "));
             throw ex;
         }
-    }
-    
-        @Test
-    public void testNodeAuditSearchCached() throws Exception {
-        InputStream in = BaseTest.getResourceAsStream(this, "nodeaudit/package-lock.json");
+
+        //this should result in a cache hit
+        in = BaseTest.getResourceAsStream(this, "nodeaudit/package-lock.json");
         try (JsonReader jsonReader = Json.createReader(in)) {
             final JsonObject packageJson = jsonReader.readObject();
             final JsonObject sanitizedJson = SanitizePackage.sanitize(packageJson);
@@ -93,5 +90,4 @@ public class NodeAuditSearchTest extends BaseTest {
 //            throw ex;
 //        }
 //    }
-
 }

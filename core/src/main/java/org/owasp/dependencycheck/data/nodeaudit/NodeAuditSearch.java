@@ -75,7 +75,7 @@ public class NodeAuditSearch {
      * Used for logging.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(NodeAuditSearch.class);
-    
+
     private DataCache<List<Advisory>> cache;
 
     /**
@@ -83,7 +83,7 @@ public class NodeAuditSearch {
      *
      * @param settings the configured settings
      * @throws java.net.MalformedURLException thrown if the configured URL is
-     *                                        invalid
+     * invalid
      */
     public NodeAuditSearch(Settings settings) throws MalformedURLException {
         final String searchUrl = settings.getString(Settings.KEYS.ANALYZER_NODE_AUDIT_URL, DEFAULT_URL);
@@ -108,11 +108,17 @@ public class NodeAuditSearch {
      * @param packageJson the package.json file retrieved from the Dependency
      * @return a List of zero or more Advisory object
      * @throws SearchException if Node Audit API is unable to analyze the
-     *                         package
-     * @throws IOException     if it's unable to connect to Node Audit API
+     * package
+     * @throws IOException if it's unable to connect to Node Audit API
      */
     public List<Advisory> submitPackage(JsonObject packageJson) throws SearchException, IOException {
-        return submitPackage(packageJson, 0);
+        String key = Checksum.getSHA256Checksum(packageJson.toString());
+        List<Advisory> cached = cache.get(key);
+        if (cached != null) {
+            LOGGER.error("cache hit woot-----------------------------------------");
+            return cached;
+        }
+        return submitPackage(packageJson, key, 0);
     }
 
     /**
@@ -120,21 +126,15 @@ public class NodeAuditSearch {
      * zero or more Advisories.
      *
      * @param packageJson the package.json file retrieved from the Dependency
-     * @param count       the current retry count
+     * @param the key for the cache entry
+     * @param count the current retry count
      * @return a List of zero or more Advisory object
      * @throws SearchException if Node Audit API is unable to analyze the
-     *                         package
-     * @throws IOException     if it's unable to connect to Node Audit API
+     * package
+     * @throws IOException if it's unable to connect to Node Audit API
      */
-    private List<Advisory> submitPackage(JsonObject packageJson, int count) throws SearchException, IOException {
+    private List<Advisory> submitPackage(JsonObject packageJson, String key, int count) throws SearchException, IOException {
         try {
-            String key = Checksum.getSHA256Checksum(packageJson.toString());
-            List<Advisory> cached = cache.get(key);
-            if (cached!=null) {
-                LOGGER.error("cache hit woot-----------------------------------------");
-                return cached;
-            }
-            
             final byte[] packageDatabytes = packageJson.toString().getBytes(StandardCharsets.UTF_8);
             final URLConnectionFactory factory = new URLConnectionFactory(settings);
             final HttpURLConnection conn = factory.createHttpURLConnection(nodeAuditUrl, useProxy);
@@ -157,18 +157,23 @@ public class NodeAuditSearch {
             switch (conn.getResponseCode()) {
                 case 200:
                     try (InputStream in = new BufferedInputStream(conn.getInputStream());
-                         JsonReader jsonReader = Json.createReader(in)) {
+                            JsonReader jsonReader = Json.createReader(in)) {
                         final JSONObject jsonResponse = new JSONObject(jsonReader.readObject().toString());
                         final NpmAuditParser parser = new NpmAuditParser();
                         List<Advisory> advisories = parser.parse(jsonResponse);
                         cache.put(key, advisories);
+                        return advisories;
+                    } catch (Exception ex) {
+                        LOGGER.debug("Error connecting to Node Audit API. Error: {}",
+                                ex.getMessage());
+                        throw new SearchException("Could not connect to Node Audit API: " + ex.getMessage(), ex);
                     }
                 case 503:
                     LOGGER.debug("Node Audit API returned `{} {}` - retrying request.",
                             conn.getResponseCode(), conn.getResponseMessage());
                     if (count > 5) {
                         LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500) * count);
-                        return submitPackage(packageJson, 1 + count);
+                        return submitPackage(packageJson, key, 1 + count);
                     }
                     throw new SearchException("Could not perform Node Audit analysis - service returned a 503.");
                 case 400:
