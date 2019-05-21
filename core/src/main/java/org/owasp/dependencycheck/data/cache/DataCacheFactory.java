@@ -25,6 +25,7 @@ import org.apache.commons.jcs.access.CacheAccess;
 import org.apache.commons.jcs.access.exception.CacheException;
 import org.apache.commons.jcs.engine.CompositeCacheAttributes;
 import org.apache.commons.jcs.engine.behavior.ICompositeCacheAttributes;
+import org.owasp.dependencycheck.data.nexus.MavenArtifact;
 import org.owasp.dependencycheck.data.nodeaudit.Advisory;
 import org.owasp.dependencycheck.utils.FileUtils;
 import org.owasp.dependencycheck.utils.Settings;
@@ -66,11 +67,13 @@ public class DataCacheFactory {
                 Properties properties = new Properties();
                 properties.load(in);
                 properties.put("jcs.auxiliary.ODC.attributes.DiskPath", cacheDirectory.getCanonicalPath());
-//                for (CacheType t : CacheType.values()) {
-//                    properties.put("jcs.region." + t.toString(), "ODC");
-//                    File fp = new File(cacheDirectory, t.toString());
-//                    properties.put("jcs.auxiliary." + t.toString() + ".attributes.DiskPath", fp.getCanonicalPath());
-//                }
+                for (CacheType t : CacheType.values()) {
+                    properties.put("jcs.region." + t.toString(), "ODC");
+                    properties.put("jcs.region." + t.toString() + ".cacheattributes.MaxObjects", "0");
+                    properties.put("jcs.region." + t.toString() + ".cacheattributes.DiskUsagePattern", "UPDATE");
+                    File fp = new File(cacheDirectory, t.toString());
+                    properties.put("jcs.auxiliary." + t.toString() + ".attributes.DiskPath", fp.getCanonicalPath());
+                }
 
                 JCS.setConfigProperties(properties);
                 initialized = true;
@@ -87,6 +90,10 @@ public class DataCacheFactory {
         if (type == CacheType.NPM) {
             CacheAccess<String, List<Advisory>> ca = JCS.getInstance(type.toString(), attr);
             DataCache<List<Advisory>> dc = new DataCache<>(ca);
+            return dc;
+        } else         if (type == CacheType.CENTRAL) {
+            CacheAccess<String, List<MavenArtifact>> ca = JCS.getInstance(type.toString(), attr);
+            DataCache<List<MavenArtifact>> dc = new DataCache<>(ca);
             return dc;
         }
         return null;

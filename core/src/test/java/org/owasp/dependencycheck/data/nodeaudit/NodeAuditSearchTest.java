@@ -21,7 +21,6 @@ import org.owasp.dependencycheck.BaseTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.owasp.dependencycheck.analyzer.exception.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.json.Json;
@@ -50,9 +49,7 @@ public class NodeAuditSearchTest extends BaseTest {
         InputStream in = BaseTest.getResourceAsStream(this, "nodeaudit/package-lock.json");
         try (JsonReader jsonReader = Json.createReader(in)) {
             final JsonObject packageJson = jsonReader.readObject();
-            final JsonObject sanitizedJson = SanitizePackage.sanitize(packageJson);
-            final JsonObjectBuilder builder = Json.createObjectBuilder();
-            final JsonObject payload = builder.add("package", sanitizedJson).build();
+            final JsonObject payload = SanitizePackage.sanitize(packageJson);
             final List<Advisory> advisories = searcher.submitPackage(payload);
             Assert.assertTrue(advisories.size() > 0);
         } catch (Exception ex) {
@@ -65,9 +62,7 @@ public class NodeAuditSearchTest extends BaseTest {
         in = BaseTest.getResourceAsStream(this, "nodeaudit/package-lock.json");
         try (JsonReader jsonReader = Json.createReader(in)) {
             final JsonObject packageJson = jsonReader.readObject();
-            final JsonObject sanitizedJson = SanitizePackage.sanitize(packageJson);
-            final JsonObjectBuilder builder = Json.createObjectBuilder();
-            final JsonObject payload = builder.add("package", sanitizedJson).build();
+            final JsonObject payload = SanitizePackage.sanitize(packageJson);
             final List<Advisory> advisories = searcher.submitPackage(payload);
             Assert.assertTrue(advisories.size() > 0);
         } catch (Exception ex) {

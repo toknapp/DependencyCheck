@@ -45,6 +45,7 @@ import javax.json.JsonReader;
 import static org.owasp.dependencycheck.analyzer.NodeAuditAnalyzer.DEFAULT_URL;
 
 import org.owasp.dependencycheck.analyzer.exception.SearchException;
+import org.owasp.dependencycheck.analyzer.exception.UnexpectedAnalysisException;
 import org.owasp.dependencycheck.data.cache.DataCache;
 import org.owasp.dependencycheck.data.cache.DataCacheFactory;
 import org.owasp.dependencycheck.utils.Checksum;
@@ -75,7 +76,9 @@ public class NodeAuditSearch {
      * Used for logging.
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(NodeAuditSearch.class);
-
+    /**
+     * Persisted disk cache for `npm audit` results.
+     */
     private DataCache<List<Advisory>> cache;
 
     /**
@@ -115,7 +118,7 @@ public class NodeAuditSearch {
         String key = Checksum.getSHA256Checksum(packageJson.toString());
         List<Advisory> cached = cache.get(key);
         if (cached != null) {
-            LOGGER.error("cache hit woot-----------------------------------------");
+            LOGGER.debug("cache hit for node audit: " + key);
             return cached;
         }
         return submitPackage(packageJson, key, 0);
@@ -171,9 +174,14 @@ public class NodeAuditSearch {
                 case 503:
                     LOGGER.debug("Node Audit API returned `{} {}` - retrying request.",
                             conn.getResponseCode(), conn.getResponseMessage());
-                    if (count > 5) {
-                        LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500) * count);
-                        return submitPackage(packageJson, key, 1 + count);
+                    if (count < 5) {
+                        count += 1;
+                        try {
+                            Thread.sleep(1500 * count);
+                        } catch (InterruptedException ex) {
+                            throw new UnexpectedAnalysisException(ex);
+                        }
+                        return submitPackage(packageJson, key, count);
                     }
                     throw new SearchException("Could not perform Node Audit analysis - service returned a 503.");
                 case 400:

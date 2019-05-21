@@ -32,6 +32,8 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import org.owasp.dependencycheck.data.cache.DataCache;
+import org.owasp.dependencycheck.data.cache.DataCacheFactory;
 import org.owasp.dependencycheck.data.nexus.MavenArtifact;
 import org.owasp.dependencycheck.utils.Settings;
 import org.owasp.dependencycheck.utils.URLConnectionFactory;
@@ -73,7 +75,10 @@ public class CentralSearch {
      * The configured settings.
      */
     private final Settings settings;
-
+    /**
+     * Persisted disk cache for `npm audit` results.
+     */
+    private DataCache<List<MavenArtifact>> cache;
     /**
      * Creates a NexusSearch for the given repository URL.
      *
@@ -104,6 +109,9 @@ public class CentralSearch {
             useProxy = false;
             LOGGER.debug("Not using proxy");
         }
+        
+        DataCacheFactory factory = new DataCacheFactory(settings);
+        cache = factory.getCache(DataCacheFactory.CacheType.CENTRAL);
     }
 
     /**
@@ -121,7 +129,17 @@ public class CentralSearch {
         if (null == sha1 || !sha1.matches("^[0-9A-Fa-f]{40}$")) {
             throw new IllegalArgumentException("Invalid SHA1 format");
         }
-        List<MavenArtifact> result = null;
+        
+        List<MavenArtifact> cached = cache.get(sha1);
+        if (cached != null) {
+            LOGGER.debug("cache hit for Central: " + sha1);
+            if (cached.isEmpty()) {
+                throw new FileNotFoundException("Artifact not found in Central");
+            }
+            return cached;
+        }
+        
+        List<MavenArtifact> result = new ArrayList<>();
         final URL url = new URL(String.format(query, rootURL, sha1));
 
         LOGGER.debug("Searching Central url {}", url);
@@ -150,7 +168,6 @@ public class CentralSearch {
                 if ("0".equals(numFound)) {
                     missing = true;
                 } else {
-                    result = new ArrayList<>();
                     final NodeList docs = (NodeList) xpath.evaluate("/response/result/doc", doc, XPathConstants.NODESET);
                     for (int i = 0; i < docs.getLength(); i++) {
                         final String g = xpath.evaluate("./str[@name='g']", docs.item(i));
@@ -188,6 +205,7 @@ public class CentralSearch {
             }
 
             if (missing) {
+                cache.put(sha1, result);
                 throw new FileNotFoundException("Artifact not found in Central");
             }
         } else if (conn.getResponseCode() == 429) {
@@ -197,6 +215,7 @@ public class CentralSearch {
             final String errorMessage = "Could not connect to MavenCentral (" + conn.getResponseCode() + "): " + conn.getResponseMessage();
             throw new IOException(errorMessage);
         }
+        cache.put(sha1, result);
         return result;
     }
 
