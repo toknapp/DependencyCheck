@@ -556,6 +556,11 @@ public final class Settings {
         public static final String ANALYZER_OSSINDEX_URL = "analyzer.ossindex.url";
 
         /**
+         * The properties key for whether the CSV Analyzer is enabled.
+         */
+        public static final String ANALYZER_CSV_ENABLED = "analyzer.csv.enabled";
+
+        /**
          * private constructor because this is a "utility" class containing
          * constants
          */
