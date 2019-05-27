@@ -30,7 +30,13 @@ public class CsvAnalyzerTest extends BaseTest {
         CsvAnalyzer instance = new CsvAnalyzer();
         instance.initialize(getSettings());
         instance.analyze(dep, engine);
-        Dependency[] dependencies = engine.getDependencies();
-        assertEquals("number of dependencies should be 1", 1, dependencies.length);
+
+        Dependency[] ds = engine.getDependencies();
+        assertEquals("number of dependencies should be 1", 1, ds.length);
+
+        Dependency d = ds[0];
+        assertEquals(d.getName(), "libressl");
+        assertEquals(d.getVersion(), "2.9.1");
+        assertEquals(d.getSha256sum(), "39e4dd856694dc10d564201e4549c46d2431601a2b10f3422507e24ccc8f62f8");
     }
 }
