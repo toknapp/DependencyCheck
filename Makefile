@@ -4,10 +4,15 @@ test:
 		-Danalyzer.node.audit.enabled=false \
 		-Dtest=CsvAnalyzerTest -pl core
 
-cli:
-	mvn -s settings.xml -pl cli package
+package:
+	mvn -s settings.xml package
 
-run: cli
-	./zip-runner.sh cli/target/dependency-check-5.0.0-M3-release.zip
+run: package
+	./zip-runner.sh cli/target/dependency-check-5.0.0-M3-release.zip \
+		--scan=./core/src/test/resources/csv \
+		--log=log --data=/tmp/DependencyCheck/h2
+
+clean:
+	rm -rf core/target cli/target target
 
 .PHONY: test cli run
