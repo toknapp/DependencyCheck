@@ -12,17 +12,6 @@ import org.owasp.dependencycheck.dependency.Dependency;
 
 public class CsvAnalyzerTest extends BaseTest {
     @Test
-    public void testAcceptSupportedExtensions() throws Exception {
-        CsvAnalyzer instance = new CsvAnalyzer();
-        instance.initialize(getSettings());
-        instance.prepare(null);
-        String[] files = {"test.csv", "test.tbl"};
-        for (String name : files) {
-            assertTrue(name, instance.accept(new File(name)));
-        }
-    }
-
-    @Test
     public void testSimple() throws Exception {
         Engine engine = new Engine(getSettings());
         Dependency dep = new Dependency(BaseTest.getResourceAsFile(this, "csv/dependencies.csv"));

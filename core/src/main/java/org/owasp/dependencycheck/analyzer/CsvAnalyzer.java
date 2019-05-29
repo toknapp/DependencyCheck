@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.Arrays;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +30,11 @@ public class CsvAnalyzer implements Analyzer, FileTypeAnalyzer {
 
     private boolean enabled = false;
 
+    private CSVFormat FORMAT = CSVFormat.newFormat(',')
+        .withQuote('"')
+        .withRecordSeparator('\n')
+        .withFirstRecordAsHeader();
+
     @Override
     public String getName() {
         return "CSV Analyzer";
@@ -37,11 +44,7 @@ public class CsvAnalyzer implements Analyzer, FileTypeAnalyzer {
     public void analyze(Dependency dependency, Engine engine) throws AnalysisException {
         String source = dependency.getFileName();
         try {
-            CSVFormat fmt = CSVFormat.newFormat(',')
-                .withQuote('"')
-                .withRecordSeparator('\n')
-                .withFirstRecordAsHeader();
-            CSVParser parser = CSVParser.parse(dependency.getActualFile(), Charset.defaultCharset(), fmt);
+            CSVParser parser = CSVParser.parse(dependency.getActualFile(), Charset.defaultCharset(), FORMAT);
             for (CSVRecord record : parser) {
                 Dependency d = new Dependency();
 
@@ -113,11 +116,21 @@ public class CsvAnalyzer implements Analyzer, FileTypeAnalyzer {
         LOGGER.trace("accept? {}", file);
 
         String fn = file.toPath().getFileName().toString();
-        if(fn.endsWith("csv") || fn.endsWith("tbl")) {
-            LOGGER.debug("accepting: {}", file);
-            return true;
+        if(!fn.endsWith("csv")) return false;
+
+        try {
+            CSVParser parser = CSVParser.parse(file, Charset.defaultCharset(), FORMAT);
+            Set<String> headers = parser.getHeaderMap().keySet();
+            if(!headers.containsAll(Arrays.asList("name", "vendor", "version", "sha256", "sha1", "md5", "upstream"))) {
+                LOGGER.debug("missing headers, rejecting: {}", file);
+                return false;
+            }
+        } catch (IOException ex) {
+            LOGGER.debug("rejecting: {}", ex);
+            return false;
         }
 
-        return false;
+        LOGGER.debug("accepting: {}", file);
+        return true;
     }
 }
