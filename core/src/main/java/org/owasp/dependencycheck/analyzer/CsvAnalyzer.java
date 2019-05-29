@@ -58,8 +58,12 @@ public class CsvAnalyzer implements Analyzer, FileTypeAnalyzer {
 
                 d.setVersion(record.get("cpe:version"));
 
-                d.addEvidence(EvidenceType.VENDOR, source, "Vendor", record.get("cpe:vendor"), Confidence.HIGH);
-                d.addEvidence(EvidenceType.PRODUCT, source, "Product", record.get("cpe:product"), Confidence.HIGH);
+                if(!record.get("cpe:vendor").isEmpty()) {
+                    d.addEvidence(EvidenceType.VENDOR, source, "Vendor", record.get("cpe:vendor"), Confidence.HIGH);
+                    d.addEvidence(EvidenceType.PRODUCT, source, "Product", record.get("cpe:product"), Confidence.HIGH);
+                } else {
+                    d.addEvidence(EvidenceType.PRODUCT, source, "Product", record.get("cpe:product"), Confidence.MEDIUM);
+                }
                 d.addEvidence(EvidenceType.VERSION, source, "Version", record.get("cpe:version"), Confidence.HIGH);
 
                 d.setActualFilePath(record.get("upstream"));
@@ -93,6 +97,7 @@ public class CsvAnalyzer implements Analyzer, FileTypeAnalyzer {
         final String key = Settings.KEYS.ANALYZER_CSV_ENABLED;
         try {
             this.enabled = settings.getBoolean(key, true);
+            LOGGER.debug("CsvAnalyzer: enabled={}", this.enabled);
         } catch (InvalidSettingException ex) {
             LOGGER.error("can't get setting: {}", key, ex);
         }

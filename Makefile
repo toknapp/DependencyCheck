@@ -5,7 +5,7 @@ test:
 		-Dtest=CsvAnalyzerTest -pl core
 
 package:
-	mvn -s settings.xml package
+	cd cli && mvn package
 
 run:
 	./zip-runner.sh cli/target/dependency-check-5.0.0-M3-release.zip \
