@@ -23,7 +23,7 @@ public class CsvAnalyzerTest extends BaseTest {
         assertEquals("number of dependencies should be 1", 1, ds.length);
 
         Dependency d = ds[0];
-        assertEquals(d.getName(), "libressl");
+        assertEquals(d.getName(), "LibreSSL");
         assertEquals(d.getVersion(), "2.9.1");
         assertEquals(d.getSha256sum(), "39e4dd856694dc10d564201e4549c46d2431601a2b10f3422507e24ccc8f62f8");
     }

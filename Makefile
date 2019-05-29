@@ -7,7 +7,7 @@ test:
 package:
 	mvn -s settings.xml package
 
-run: package
+run:
 	./zip-runner.sh cli/target/dependency-check-5.0.0-M3-release.zip \
 		--scan=./core/src/test/resources/csv \
 		--log=log --data=/tmp/DependencyCheck/h2

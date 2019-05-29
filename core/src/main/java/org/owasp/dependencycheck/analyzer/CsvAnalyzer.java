@@ -48,12 +48,19 @@ public class CsvAnalyzer implements Analyzer, FileTypeAnalyzer {
             for (CSVRecord record : parser) {
                 Dependency d = new Dependency();
 
-                d.setName(record.get("name"));
-                d.setVersion(record.get("version"));
+                if(record.isMapped("name")) {
+                    d.setName(record.get("name"));
+                } else if(record.isMapped("dependency")) {
+                    d.setName(record.get("dependency"));
+                } else {
+                    d.setName(record.get("cpe:product"));
+                }
 
-                d.addEvidence(EvidenceType.VENDOR, source, "Vendor", record.get("vendor"), Confidence.HIGH);
-                d.addEvidence(EvidenceType.PRODUCT, source, "Product", record.get("name"), Confidence.HIGH);
-                d.addEvidence(EvidenceType.VERSION, source, "Version", record.get("version"), Confidence.HIGH);
+                d.setVersion(record.get("cpe:version"));
+
+                d.addEvidence(EvidenceType.VENDOR, source, "Vendor", record.get("cpe:vendor"), Confidence.HIGH);
+                d.addEvidence(EvidenceType.PRODUCT, source, "Product", record.get("cpe:product"), Confidence.HIGH);
+                d.addEvidence(EvidenceType.VERSION, source, "Version", record.get("cpe:version"), Confidence.HIGH);
 
                 d.setActualFilePath(record.get("upstream"));
                 d.setFilePath(record.get("upstream"));
@@ -121,7 +128,7 @@ public class CsvAnalyzer implements Analyzer, FileTypeAnalyzer {
         try {
             CSVParser parser = CSVParser.parse(file, Charset.defaultCharset(), FORMAT);
             Set<String> headers = parser.getHeaderMap().keySet();
-            if(!headers.containsAll(Arrays.asList("name", "vendor", "version", "sha256", "sha1", "md5", "upstream"))) {
+            if(!headers.containsAll(Arrays.asList("cpe:product", "cpe:vendor", "cpe:version", "sha256", "sha1", "md5", "upstream"))) {
                 LOGGER.debug("missing headers, rejecting: {}", file);
                 return false;
             }
